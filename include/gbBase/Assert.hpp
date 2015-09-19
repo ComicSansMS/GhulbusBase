@@ -188,7 +188,7 @@ namespace GHULBUS_BASE_NAMESPACE
          * This handler prints an error message to cerr and enters an infinite loop.
          * The invoking thread will be put to sleep, so it will not burn CPU time while halted.
          */
-        GHULBUS_BASE_API void failHalt(HandlerParameters const& param);
+        [[noreturn]] GHULBUS_BASE_API void failHalt(HandlerParameters const& param);
 
         /** Assertion handler that throws an exception.
          * @todo Not implemented.
