@@ -106,14 +106,14 @@
 #define GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)                                                                         \
     do {                                                                                                             \
         if(!(x)) {                                                                                                   \
-            GHULBUS_BASE_NAMESPACE::Assert::assertionFailed(                                                         \
-                GHULBUS_BASE_NAMESPACE::Assert::HandlerParameters{                                                   \
+            ::GHULBUS_BASE_NAMESPACE::Assert::assertionFailed(                                                       \
+                ::GHULBUS_BASE_NAMESPACE::Assert::HandlerParameters{                                                 \
                                                             __FILE__,                                                \
                                                             __LINE__,                                                \
                                                             GHULBUS_INTERNAL_HELPER_FUNCTION,                        \
                                                             #x,                                                      \
                                                             msg,                                                     \
-                                                            GHULBUS_BASE_NAMESPACE::Assert::getHandlerParam() } );   \
+                                                            ::GHULBUS_BASE_NAMESPACE::Assert::getHandlerParam() } ); \
         }                                                                                                            \
     } while(false)
 
@@ -182,7 +182,7 @@ namespace GHULBUS_BASE_NAMESPACE
         /** Assertion handler that calls std::abort().
          * This is the default assertion handler. It writes an error message to cerr and calls abort.
          */
-        GHULBUS_BASE_API void failAbort(HandlerParameters const& param);
+        [[noreturn]] GHULBUS_BASE_API void failAbort(HandlerParameters const& param);
 
         /** Assertion handler that halts the program to allow a debugger to attach.
          * This handler prints an error message to cerr and enters an infinite loop.
@@ -193,7 +193,7 @@ namespace GHULBUS_BASE_NAMESPACE
         /** Assertion handler that throws an exception.
          * @todo Not implemented.
          */
-        GHULBUS_BASE_API void failThrow(HandlerParameters const& param);
+        [[noreturn]] GHULBUS_BASE_API void failThrow(HandlerParameters const& param);
     };
 }
 

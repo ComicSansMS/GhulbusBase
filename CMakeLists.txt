@@ -10,20 +10,25 @@ set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 set(GB_BASE_SOURCE_FILES
 	${GB_BASE_SOURCE_DIR}/Assert.cpp
+	${GB_BASE_SOURCE_DIR}/Exception.cpp
 )
 
 set(GB_BASE_HEADER_FILES
 	${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
 	${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
+	${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
 	${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
 )
 
 set(GB_BASE_TEST_SOURCES
 	${GB_BASE_TEST_DIR}/TestAssert.cpp
 	${GB_BASE_TEST_DIR}/TestBase.cpp
+	${GB_BASE_TEST_DIR}/TestException.cpp
 )
 
 add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
+target_compile_features(gbBase PRIVATE cxx_lambdas cxx_override cxx_range_for)
+target_compile_features(gbBase PUBLIC cxx_attributes cxx_func_identifier cxx_noexcept)
 target_include_directories(gbBase PUBLIC ${GB_BASE_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
 target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
 target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
@@ -78,9 +83,6 @@ option(GB_GENERATE_DOXYGEN_DOCUMENTATION "If checked, API documentation will be 
 if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
 	find_package(Doxygen)
 	if(DOXYGEN_FOUND)
-		if(DOXYGEN_DOT_FOUND)
-			get_filename_component(DOXYGEN_DOT_PATH ${DOXYGEN_DOT_EXECUTABLE} DIRECTORY)
-		endif()
 		set(GB_LIB_DOC_DIR ${PROJECT_BINARY_DIR}/doc)
 		configure_file(${PROJECT_SOURCE_DIR}/doc/Doxyfile.in ${GB_LIB_DOC_DIR}/Doxyfile @ONLY)
 		add_custom_target(doxygen-doc

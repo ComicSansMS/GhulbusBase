@@ -14,9 +14,9 @@
  */
 #define GHULBUS_BASE_API GHULBUS_LIBRARY_GBBASE_EXPORT
 
-/** Namespace for GhulbusBase library.
- * The implementation internally always uses this macro to refer to the namespace. When building GhulbusBase yourself,
- * you can globally redefine this macro to move to use a different namespace.
+/** \namespace Ghulbus Base namespace for the Ghulbus library.
+ * The implementation internally always uses this macro `GHULBUS_BASE_NAMESPACE` to refer to the namespace.
+ * When building GhulbusBase yourself, you can globally redefine this macro to move to a different namespace.
  */
 #ifndef GHULBUS_BASE_NAMESPACE
 #   define GHULBUS_BASE_NAMESPACE Ghulbus

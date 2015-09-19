@@ -1,5 +1,9 @@
 #include <gbBase/Assert.hpp>
 
+#include <gbBase/Exception.hpp>
+
+#include <boost/exception/all.hpp>
+
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
@@ -16,7 +20,7 @@ std::atomic<void*>           g_AssertionHandlerUserParam = nullptr;
 
 std::ostream& operator<<(std::ostream& os, Assert::HandlerParameters const& handler_param)
 {
-    os << "Assertion failed " << handler_param.line << "@" << handler_param.file
+    os << handler_param.file << "(" << handler_param.line << "): Assertion failed "
        << " in function " << handler_param.function << ": " << handler_param.condition;
     if (handler_param.message) {
         os << " - " << handler_param.message;
@@ -77,7 +81,12 @@ void failHalt(HandlerParameters const& param)
 
 void failThrow(HandlerParameters const& param)
 {
-    throw 42;
+    boost::throw_exception(boost::enable_error_info(Exceptions::AssertFailed()) <<
+                           boost::throw_file(param.file) <<
+                           boost::throw_line(param.line) <<
+                           boost::throw_function(param.function) <<
+                           Exception_Info::description(std::string(param.condition) +
+                               (param.message ? " - " : "") + (param.message ? param.message : "")));
 }
 }
 }
