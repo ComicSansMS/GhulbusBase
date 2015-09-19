@@ -34,22 +34,22 @@ std::string toString(Assert::HandlerParameters const& handler_param)
 
 namespace Assert
 {
-void setAssertionHandler(Handler handler)
+void setAssertionHandler(Handler handler) noexcept
 {
     g_AssertionHandler.store(handler);
 }
 
-Handler getAssertionHandler()
+Handler getAssertionHandler() noexcept
 {
     return g_AssertionHandler;
 }
 
-void setHandlerParam(void* user_param)
+void setHandlerParam(void* user_param) noexcept
 {
     g_AssertionHandlerUserParam.store(user_param);
 }
 
-void* getHandlerParam()
+void* getHandlerParam() noexcept
 {
     return g_AssertionHandlerUserParam;
 }
