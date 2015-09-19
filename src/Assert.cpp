@@ -15,8 +15,8 @@ namespace GHULBUS_BASE_NAMESPACE
 {
 namespace
 {
-std::atomic<Assert::Handler> g_AssertionHandler = &Assert::failAbort;
-std::atomic<void*>           g_AssertionHandlerUserParam = nullptr;
+std::atomic<Assert::Handler> g_AssertionHandler(&Assert::failAbort);
+std::atomic<void*>           g_AssertionHandlerUserParam(nullptr);
 
 std::ostream& operator<<(std::ostream& os, Assert::HandlerParameters const& handler_param)
 {
