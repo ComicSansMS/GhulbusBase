@@ -1,0 +1,94 @@
+cmake_minimum_required(VERSION 3.3)
+
+project(GhulbusBase)
+
+find_package(Boost REQUIRED)
+
+set(GB_BASE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+set(GB_BASE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
+
+set(GB_BASE_SOURCE_FILES
+	${GB_BASE_SOURCE_DIR}/Assert.cpp
+)
+
+set(GB_BASE_HEADER_FILES
+	${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
+	${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
+	${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
+)
+
+set(GB_BASE_TEST_SOURCES
+	${GB_BASE_TEST_DIR}/TestAssert.cpp
+	${GB_BASE_TEST_DIR}/TestBase.cpp
+)
+
+add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
+target_include_directories(gbBase PUBLIC ${GB_BASE_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
+target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
+target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
+if(MSVC)
+	target_compile_options(gbBase PRIVATE /W4)
+endif()
+option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
+include(GenerateExportHeader)
+generate_export_header(gbBase
+	EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp
+	PREFIX_NAME GHULBUS_LIBRARY_
+)
+target_include_directories(gbBase PUBLIC ${PROJECT_BINARY_DIR}/generated)
+ADD_COMPILER_EXPORT_FLAGS(GB_COMPILE_EXPORT_FLAGS)
+if(BUILD_SHARED_LIBS)
+	target_compile_options(gbBase PRIVATE ${GB_COMPILE_EXPORT_FLAGS})
+endif()
+
+option(GB_BUILD_TESTS "Determines whether to build tests." ON)
+if(GB_BUILD_TESTS)
+	enable_testing()
+
+	if(NOT TARGET Catch)
+		include(ExternalProject)
+		if(WIN32)
+			set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip)
+			set(GB_EXTERNAL_CATCH_MD5 cda228922a1c9248364c99a3ff9cd9fa)
+		else()
+			set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz)
+			set(GB_EXTERNAL_CATCH_MD5 a8dfb7be899a6e7fb30bd55d53426122)
+		endif()
+		ExternalProject_Add(Catch-External
+			PREFIX ${CMAKE_BINARY_DIR}/external/Catch
+			URL ${GB_EXTERNAL_CATCH_URL}
+			URL_HASH MD5=${GB_EXTERNAL_CATCH_MD5}
+			CONFIGURE_COMMAND ""
+			BUILD_COMMAND ""
+			INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch.hpp
+													 ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
+		)
+		add_library(Catch INTERFACE)
+		add_dependencies(Catch Catch-External)
+		target_include_directories(Catch INTERFACE ${CMAKE_BINARY_DIR}/external/Catch/include)
+	endif()
+
+	add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
+	target_link_libraries(gbBase_Test gbBase Catch)
+	add_test(NAME TestBase COMMAND gbBase_Test)
+endif()
+
+option(GB_GENERATE_DOXYGEN_DOCUMENTATION "If checked, API documentation will be generated if Doxygen is available." ON)
+if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
+	find_package(Doxygen)
+	if(DOXYGEN_FOUND)
+		if(DOXYGEN_DOT_FOUND)
+			get_filename_component(DOXYGEN_DOT_PATH ${DOXYGEN_DOT_EXECUTABLE} DIRECTORY)
+		endif()
+		set(GB_LIB_DOC_DIR ${PROJECT_BINARY_DIR}/doc)
+		configure_file(${PROJECT_SOURCE_DIR}/doc/Doxyfile.in ${GB_LIB_DOC_DIR}/Doxyfile @ONLY)
+		add_custom_target(doxygen-doc
+			COMMAND ${DOXYGEN_EXECUTABLE}
+			WORKING_DIRECTORY ${GB_LIB_DOC_DIR}
+			COMMENT "Building doxygen documentation"
+			SOURCES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in
+		)
+		source_group("" FILES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
+	endif()
+endif()
