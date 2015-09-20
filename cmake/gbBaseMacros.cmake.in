@@ -1,0 +1,15 @@
+
+function(gbLibAddRuntimeDependencies depending_target gblib_dependency)
+    if(WIN32)
+        get_property(imported_configs TARGET ${gblib_dependency} PROPERTY IMPORTED_CONFIGURATIONS)
+        set(dlls "")
+        foreach(cfg ${imported_configs})
+            get_property(dll TARGET ${gblib_dependency} PROPERTY IMPORTED_LOCATION_${cfg})
+            set(dlls ${dlls} $<$<CONFIG:${cfg}>:${dll}>)
+        endforeach()
+        add_custom_command(TARGET ${depending_target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${dlls}
+            $<TARGET_FILE_DIR:${depending_target}>)
+    endif()
+endfunction()

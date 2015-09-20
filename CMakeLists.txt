@@ -18,21 +18,21 @@ set(GB_BASE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 set(GB_BASE_SOURCE_FILES
-	${GB_BASE_SOURCE_DIR}/Assert.cpp
-	${GB_BASE_SOURCE_DIR}/Exception.cpp
+    ${GB_BASE_SOURCE_DIR}/Assert.cpp
+    ${GB_BASE_SOURCE_DIR}/Exception.cpp
 )
 
 set(GB_BASE_HEADER_FILES
-	${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
-	${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
-	${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
-	${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
 )
 
 set(GB_BASE_TEST_SOURCES
-	${GB_BASE_TEST_DIR}/TestAssert.cpp
-	${GB_BASE_TEST_DIR}/TestBase.cpp
-	${GB_BASE_TEST_DIR}/TestException.cpp
+    ${GB_BASE_TEST_DIR}/TestAssert.cpp
+    ${GB_BASE_TEST_DIR}/TestBase.cpp
+    ${GB_BASE_TEST_DIR}/TestException.cpp
 )
 
 add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
@@ -47,14 +47,14 @@ target_compile_options(gbBase PRIVATE
 option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
 include(GenerateExportHeader)
 generate_export_header(gbBase
-	EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp
-	PREFIX_NAME GHULBUS_LIBRARY_
+    EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp
+    PREFIX_NAME GHULBUS_LIBRARY_
 )
 set(GB_BASE_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp)
 target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
 ADD_COMPILER_EXPORT_FLAGS(GB_COMPILE_EXPORT_FLAGS)
 if(BUILD_SHARED_LIBS)
-	target_compile_options(gbBase PRIVATE ${GB_COMPILE_EXPORT_FLAGS})
+    target_compile_options(gbBase PRIVATE ${GB_COMPILE_EXPORT_FLAGS})
 endif()
 
 set_property(TARGET gbBase PROPERTY VERSION ${GB_BASE_VERSION})
@@ -67,34 +67,34 @@ set_property(TARGET gbBase PROPERTY DEBUG_POSTFIX d)
 
 option(GB_BUILD_TESTS "Determines whether to build tests." ON)
 if(GB_BUILD_TESTS)
-	enable_testing()
+    enable_testing()
 
-	if(NOT TARGET Catch)
-		include(ExternalProject)
-		if(WIN32)
-			set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip)
-			set(GB_EXTERNAL_CATCH_MD5 cda228922a1c9248364c99a3ff9cd9fa)
-		else()
-			set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz)
-			set(GB_EXTERNAL_CATCH_MD5 a8dfb7be899a6e7fb30bd55d53426122)
-		endif()
-		ExternalProject_Add(Catch-External
-			PREFIX ${CMAKE_BINARY_DIR}/external/Catch
-			URL ${GB_EXTERNAL_CATCH_URL}
-			URL_HASH MD5=${GB_EXTERNAL_CATCH_MD5}
-			CONFIGURE_COMMAND ""
-			BUILD_COMMAND ""
-			INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch.hpp
-													 ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
-		)
-		add_library(Catch INTERFACE)
-		add_dependencies(Catch Catch-External)
-		target_include_directories(Catch INTERFACE ${CMAKE_BINARY_DIR}/external/Catch/include)
-	endif()
+    if(NOT TARGET Catch)
+        include(ExternalProject)
+        if(WIN32)
+            set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip)
+            set(GB_EXTERNAL_CATCH_MD5 cda228922a1c9248364c99a3ff9cd9fa)
+        else()
+            set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz)
+            set(GB_EXTERNAL_CATCH_MD5 a8dfb7be899a6e7fb30bd55d53426122)
+        endif()
+        ExternalProject_Add(Catch-External
+            PREFIX ${CMAKE_BINARY_DIR}/external/Catch
+            URL ${GB_EXTERNAL_CATCH_URL}
+            URL_HASH MD5=${GB_EXTERNAL_CATCH_MD5}
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch.hpp
+                                                     ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
+        )
+        add_library(Catch INTERFACE)
+        add_dependencies(Catch Catch-External)
+        target_include_directories(Catch INTERFACE ${CMAKE_BINARY_DIR}/external/Catch/include)
+    endif()
 
-	add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
-	target_link_libraries(gbBase_Test gbBase Catch)
-	add_test(NAME TestBase COMMAND gbBase_Test)
+    add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
+    target_link_libraries(gbBase_Test gbBase Catch)
+    add_test(NAME TestBase COMMAND gbBase_Test)
 endif()
 
 ###############################################################################
@@ -103,24 +103,26 @@ endif()
 
 option(GB_GENERATE_DOXYGEN_DOCUMENTATION "If checked, API documentation will be generated if Doxygen is available." ON)
 if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
-	find_package(Doxygen)
-	if(DOXYGEN_FOUND)
-		set(GB_LIB_DOC_DIR ${PROJECT_BINARY_DIR}/doc)
-		configure_file(${PROJECT_SOURCE_DIR}/doc/Doxyfile.in ${GB_LIB_DOC_DIR}/Doxyfile @ONLY)
-		add_custom_target(doxygen-doc
-			COMMAND ${DOXYGEN_EXECUTABLE}
-			WORKING_DIRECTORY ${GB_LIB_DOC_DIR}
-			COMMENT "Building doxygen documentation"
-			SOURCES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in
-		)
-		source_group("" FILES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
-	endif()
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        set(GB_LIB_DOC_DIR ${PROJECT_BINARY_DIR}/doc)
+        configure_file(${PROJECT_SOURCE_DIR}/doc/Doxyfile.in ${GB_LIB_DOC_DIR}/Doxyfile @ONLY)
+        add_custom_target(doxygen-doc
+            COMMAND ${DOXYGEN_EXECUTABLE}
+            WORKING_DIRECTORY ${GB_LIB_DOC_DIR}
+            COMMENT "Building doxygen documentation"
+            SOURCES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in
+        )
+        source_group("" FILES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
+    endif()
 endif()
 
 
 ###############################################################################
 ## Packaging gbBase
 ###############################################################################
+
+set(GB_LIBRARY_NAMESPACE Ghulbus::)
 
 install(TARGETS gbBase EXPORT gbBaseTargets
     RUNTIME DESTINATION bin/$<CONFIG>
@@ -130,14 +132,14 @@ install(TARGETS gbBase EXPORT gbBaseTargets
 )
 target_include_directories(gbBase PUBLIC $<INSTALL_INTERFACE:include>)
 install(FILES ${GB_BASE_HEADER_FILES} ${GB_BASE_GENERATED_HEADER_FILES} DESTINATION include/gbBase)
-if(MSVC)
+if(MSVC AND BUILD_SHARED_LIBS)
     install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/Debug CONFIGURATIONS Debug)
-	install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/RelWithDebInfo CONFIGURATIONS RelWithDebInfo)
+    install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/RelWithDebInfo CONFIGURATIONS RelWithDebInfo)
     install(FILES LICENSE DESTINATION ".")
 endif()
 
 if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
-	install(DIRECTORY ${GB_LIB_DOC_DIR}/html DESTINATION doc MESSAGE_NEVER)
+    install(DIRECTORY ${GB_LIB_DOC_DIR}/html DESTINATION doc MESSAGE_NEVER)
 endif()
 
 include(CmakePackageConfigHelpers)
@@ -148,9 +150,14 @@ write_basic_package_version_file(
 )
 
 # installation - build tree specific package config files
-export(EXPORT gbBaseTargets FILE ${PROJECT_BINARY_DIR}/gbBaseTargets.cmake)
+export(EXPORT gbBaseTargets FILE ${PROJECT_BINARY_DIR}/cmake/gbBaseTargets.cmake NAMESPACE ${GB_LIBRARY_NAMESPACE})
 configure_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
     ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
+    COPYONLY
+)
+configure_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseMacros.cmake.in
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseMacros.cmake
+    COPYONLY
     COPYONLY
 )
 export(PACKAGE gbBase)
@@ -162,10 +169,12 @@ configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
 )
 install(EXPORT gbBaseTargets
     FILE gbBaseTargets.cmake
+    NAMESPACE ${GB_LIBRARY_NAMESPACE}
     DESTINATION "cmake"
 )
 install(FILES
     ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseMacros.cmake
     ${PROJECT_BINARY_DIR}/cmake/gbBaseVersion.cmake
     DESTINATION "cmake"
 )
