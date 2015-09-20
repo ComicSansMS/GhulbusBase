@@ -153,6 +153,7 @@ configure_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
     ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
     COPYONLY
 )
+export(PACKAGE gbBase)
 
 # installation - relocatable package config files
 configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
