@@ -143,38 +143,36 @@ if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
 endif()
 
 include(CmakePackageConfigHelpers)
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
+    INSTALL_DESTINATION cmake
+    NO_SET_AND_CHECK_MACRO
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
 write_basic_package_version_file(
     ${PROJECT_BINARY_DIR}/cmake/gbBaseVersion.cmake
     VERSION ${GB_BASE_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
-# installation - build tree specific package config files
-export(EXPORT gbBaseTargets FILE ${PROJECT_BINARY_DIR}/cmake/gbBaseTargets.cmake NAMESPACE ${GB_LIBRARY_NAMESPACE})
-configure_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
-    ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
-    COPYONLY
-)
 configure_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseMacros.cmake.in
     ${PROJECT_BINARY_DIR}/cmake/gbBaseMacros.cmake
     COPYONLY
-    COPYONLY
 )
+
+# installation - build tree specific package config files
+export(EXPORT gbBaseTargets FILE ${PROJECT_BINARY_DIR}/cmake/gbBaseTargets.cmake NAMESPACE ${GB_LIBRARY_NAMESPACE})
 export(PACKAGE gbBase)
 
 # installation - relocatable package config files
-configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
-                              ${PROJECT_CURRENT_BINARY_DIR}/cmake/gbBaseConfig.cmake
-                              INSTALL_DESTINATION cmake
-)
 install(EXPORT gbBaseTargets
     FILE gbBaseTargets.cmake
     NAMESPACE ${GB_LIBRARY_NAMESPACE}
-    DESTINATION "cmake"
+    DESTINATION cmake
 )
 install(FILES
     ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
     ${PROJECT_BINARY_DIR}/cmake/gbBaseMacros.cmake
     ${PROJECT_BINARY_DIR}/cmake/gbBaseVersion.cmake
-    DESTINATION "cmake"
+    DESTINATION cmake
 )
