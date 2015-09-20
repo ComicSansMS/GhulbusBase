@@ -19,7 +19,6 @@ set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 set(GB_BASE_SOURCE_FILES
     ${GB_BASE_SOURCE_DIR}/Assert.cpp
-    ${GB_BASE_SOURCE_DIR}/Exception.cpp
 )
 
 set(GB_BASE_HEADER_FILES

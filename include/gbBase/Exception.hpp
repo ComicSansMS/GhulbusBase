@@ -77,7 +77,9 @@ namespace GHULBUS_BASE_NAMESPACE
             */
             class ExceptionImpl : public virtual ::GHULBUS_BASE_NAMESPACE::Exception
             {
-                GHULBUS_BASE_API char const* what() const noexcept override;
+                char const* what() const noexcept override {
+                    return boost::diagnostic_information_what(*this);
+                }
             };
         }
 
