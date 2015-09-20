@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.3)
 
 project(GhulbusBase)
 
+###############################################################################
+## Library gbBase
+###############################################################################
+
+set(GB_BASE_VERSION_MAJOR 0)
+set(GB_BASE_VERSION_MINOR 1)
+set(GB_BASE_VERSION_PATCH 0)
+set(GB_BASE_VERSION "${GB_BASE_VERSION_MAJOR}.${GB_BASE_VERSION_MINOR}.${GB_BASE_VERSION_PATCH}")
+
 find_package(Boost REQUIRED)
 
 set(GB_BASE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -29,7 +38,7 @@ set(GB_BASE_TEST_SOURCES
 add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
 target_compile_features(gbBase PRIVATE cxx_lambdas cxx_override cxx_range_for)
 target_compile_features(gbBase PUBLIC cxx_attributes cxx_func_identifier cxx_noexcept)
-target_include_directories(gbBase PUBLIC ${GB_BASE_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
+target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}> $<BUILD_INTERFACE:${Boost_INCLUDE_DIR}>)
 target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
 target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
@@ -41,11 +50,20 @@ generate_export_header(gbBase
 	EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp
 	PREFIX_NAME GHULBUS_LIBRARY_
 )
-target_include_directories(gbBase PUBLIC ${PROJECT_BINARY_DIR}/generated)
+set(GB_BASE_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp)
+target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
 ADD_COMPILER_EXPORT_FLAGS(GB_COMPILE_EXPORT_FLAGS)
 if(BUILD_SHARED_LIBS)
 	target_compile_options(gbBase PRIVATE ${GB_COMPILE_EXPORT_FLAGS})
 endif()
+
+set_property(TARGET gbBase PROPERTY VERSION ${GB_BASE_VERSION})
+set_property(TARGET gbBase PROPERTY SOVERSION ${GB_BASE_VERSION_MAJOR})
+set_property(TARGET gbBase PROPERTY DEBUG_POSTFIX d)
+
+###############################################################################
+## Testing gbBase
+###############################################################################
 
 option(GB_BUILD_TESTS "Determines whether to build tests." ON)
 if(GB_BUILD_TESTS)
@@ -79,6 +97,10 @@ if(GB_BUILD_TESTS)
 	add_test(NAME TestBase COMMAND gbBase_Test)
 endif()
 
+###############################################################################
+## Doxygen gbBase
+###############################################################################
+
 option(GB_GENERATE_DOXYGEN_DOCUMENTATION "If checked, API documentation will be generated if Doxygen is available." ON)
 if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
 	find_package(Doxygen)
@@ -94,3 +116,55 @@ if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
 		source_group("" FILES ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in)
 	endif()
 endif()
+
+
+###############################################################################
+## Packaging gbBase
+###############################################################################
+
+install(TARGETS gbBase EXPORT gbBaseTargets
+    RUNTIME DESTINATION bin/$<CONFIG>
+    LIBRARY DESTINATION lib/$<CONFIG>
+    ARCHIVE DESTINATION lib/$<CONFIG>
+    INCLUDES DESTINATION include
+)
+target_include_directories(gbBase PUBLIC $<INSTALL_INTERFACE:include>)
+install(FILES ${GB_BASE_HEADER_FILES} ${GB_BASE_GENERATED_HEADER_FILES} DESTINATION include/gbBase)
+if(MSVC)
+    install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/Debug CONFIGURATIONS Debug)
+	install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/RelWithDebInfo CONFIGURATIONS RelWithDebInfo)
+    install(FILES LICENSE DESTINATION ".")
+endif()
+
+if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
+	install(DIRECTORY ${GB_LIB_DOC_DIR}/html DESTINATION doc MESSAGE_NEVER)
+endif()
+
+include(CmakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseVersion.cmake
+    VERSION ${GB_BASE_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# installation - build tree specific package config files
+export(EXPORT gbBaseTargets FILE ${PROJECT_BINARY_DIR}/gbBaseTargets.cmake)
+configure_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
+    COPYONLY
+)
+
+# installation - relocatable package config files
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
+                              ${PROJECT_CURRENT_BINARY_DIR}/cmake/gbBaseConfig.cmake
+                              INSTALL_DESTINATION cmake
+)
+install(EXPORT gbBaseTargets
+    FILE gbBaseTargets.cmake
+    DESTINATION "cmake"
+)
+install(FILES
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
+    ${PROJECT_BINARY_DIR}/cmake/gbBaseVersion.cmake
+    DESTINATION "cmake"
+)

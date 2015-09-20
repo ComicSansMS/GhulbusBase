@@ -191,7 +191,8 @@ namespace GHULBUS_BASE_NAMESPACE
         [[noreturn]] GHULBUS_BASE_API void failHalt(HandlerParameters const& param);
 
         /** Assertion handler that throws an exception.
-         * @todo Not implemented.
+         * This handler will throw an exception of type Ghulbus::Exceptions::AssertFailed.
+         * The locational information of that exception will point to the location where the failing exception occured.
          */
         [[noreturn]] GHULBUS_BASE_API void failThrow(HandlerParameters const& param);
     };
