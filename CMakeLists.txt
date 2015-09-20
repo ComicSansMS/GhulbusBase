@@ -52,9 +52,9 @@ generate_export_header(gbBase
 )
 set(GB_BASE_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp)
 target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
-ADD_COMPILER_EXPORT_FLAGS(GB_COMPILE_EXPORT_FLAGS)
 if(BUILD_SHARED_LIBS)
-    target_compile_options(gbBase PRIVATE ${GB_COMPILE_EXPORT_FLAGS})
+    set_property(TARGET gbBase PROPERTY CXX_VISIBILITY_PRESET hidden)
+    set_property(TARGET gbBase PROPERTY VISIBILITY_INLINES_HIDDEN ON)
 endif()
 
 set_property(TARGET gbBase PROPERTY VERSION ${GB_BASE_VERSION})
