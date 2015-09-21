@@ -72,26 +72,32 @@ namespace GHULBUS_BASE_NAMESPACE
     {
         namespace impl
         {
+#pragma warning(push)
+#pragma warning(disable:4275)   // exported class inherits from non-exported class;
+                                // this should be fine here, as Exception is a pure interface class.
+                                // the exporting here is not needed on Windows, but on OS X it will mess up
+                                // the rtti when linking dynamically without it.
             /** Mixin class for implementing Ghulbus::Exceptions.
             * This class provides a default implementation for what() that gives a detailed error message.
             */
-            class ExceptionImpl : public virtual ::GHULBUS_BASE_NAMESPACE::Exception
+            class GHULBUS_BASE_API ExceptionImpl : public virtual ::GHULBUS_BASE_NAMESPACE::Exception
             {
                 char const* what() const noexcept override {
                     return boost::diagnostic_information_what(*this);
                 }
             };
+#pragma warning(pop)
         }
 
         /** Thrown by Assert::failThrow in case of a failing exception.
         */
-        class AssertFailed : public impl::ExceptionImpl
+        class GHULBUS_BASE_API AssertFailed : public impl::ExceptionImpl
         {
         };
 
         /** Thrown by interfaces that have not yet been implemented.
         */
-        class NotImplemented : public impl::ExceptionImpl
+        class GHULBUS_BASE_API NotImplemented : public impl::ExceptionImpl
         {
         };
     }

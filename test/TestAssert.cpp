@@ -4,6 +4,25 @@
 
 #include <catch.hpp>
 
+namespace
+{
+// catch's exception checking does not seem to work
+// with abstract exception types; let's roll our own!
+template<typename T>
+void checkAssertExceptionType()
+{
+    bool was_caught = false;
+    try {
+        GHULBUS_ASSERT_PRD(false);
+    } catch(T&) {
+        was_caught = true;
+    } catch(...) {
+        CHECK(("Incorrect exception type.", false));
+    }
+    CHECK(was_caught);
+}
+}
+
 TEST_CASE("Assert")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
@@ -66,8 +85,13 @@ TEST_CASE("Assert")
 
     SECTION("Throw Handler throws AssertFailed exception")
     {
+        // the big gotcha of this test is that we throw across dll boundaries here.
+        // on some platforms, this can mess up the rtti if the exception was not declared correctly.
+        // technically, this is probably more a test of Exceptions::AssertFailed than GHULBUS_ASSERT...
         Assert::setAssertionHandler(&Assert::failThrow);
-        CHECK_THROWS_AS(GHULBUS_ASSERT_PRD(false), Exceptions::AssertFailed);
+        checkAssertExceptionType<Exceptions::AssertFailed>();
+        checkAssertExceptionType<Exception>();
+        checkAssertExceptionType<std::exception>();
         Assert::setAssertionHandler(&Assert::failAbort);
     }
 }
