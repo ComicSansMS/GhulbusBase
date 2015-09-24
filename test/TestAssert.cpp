@@ -17,7 +17,7 @@ void checkExceptionType(void (*fun)())
     } catch(T&) {
         was_caught = true;
     } catch(...) {
-        CHECK(("Incorrect exception type.", false));
+        CHECK_FALSE("Incorrect exception type");
     }
     CHECK(was_caught);
 }
