@@ -11,6 +11,8 @@
 
 #include <boost/exception/all.hpp>
 
+#include <boost/predef/compiler.h>
+
 #include <exception>
 #include <string>
 
@@ -72,11 +74,13 @@ namespace GHULBUS_BASE_NAMESPACE
     {
         namespace impl
         {
+#if BOOST_COMP_MSVC
 #pragma warning(push)
 #pragma warning(disable:4275)   // exported class inherits from non-exported class;
                                 // this should be fine here, as Exception is a pure interface class.
                                 // the exporting here is not needed on Windows, but on OS X it will mess up
                                 // the rtti when linking dynamically without it.
+#endif
             /** Mixin class for implementing Ghulbus::Exceptions.
             * This class provides a default implementation for what() that gives a detailed error message.
             */
@@ -86,7 +90,9 @@ namespace GHULBUS_BASE_NAMESPACE
                     return boost::diagnostic_information_what(*this);
                 }
             };
+#if BOOST_COMP_MSVC
 #pragma warning(pop)
+#endif
         }
 
         /** Thrown by Assert::failThrow in case of a failing exception.
