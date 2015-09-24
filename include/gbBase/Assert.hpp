@@ -48,21 +48,27 @@
 #define GHULBUS_PRECONDITION_PRD(x) GHULBUS_PRECONDITION_PRD_MESSAGE(x, nullptr)
 
 #if defined GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG
-#   define GHULBUS_ASSERT_MESSAGE(x, msg)     GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
-#   define GHULBUS_ASSERT_DBG_MESSAGE(x, msg) GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
-#   define GHULBUS_ASSERT_PRD_MESSAGE(x, msg) GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
+#   define GHULBUS_ASSERT_MESSAGE(x, msg)           GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
+#   define GHULBUS_ASSERT_DBG_MESSAGE(x, msg)       GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
+#   define GHULBUS_ASSERT_PRD_MESSAGE(x, msg)       GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
 
 #   define GHULBUS_PRECONDITION_MESSAGE(x, msg)     GHULBUS_INTERNAL_PRECONDITION_IMPL(x, msg)
 #   define GHULBUS_PRECONDITION_DBG_MESSAGE(x, msg) GHULBUS_INTERNAL_PRECONDITION_IMPL(x, msg)
 #   define GHULBUS_PRECONDITION_PRD_MESSAGE(x, msg) GHULBUS_INTERNAL_PRECONDITION_IMPL(x, msg)
+
+#   define GHULBUS_UNREACHABLE()                    GHULBUS_INTERNAL_UNREACHABLE_IMPL(nullptr)
+#   define GHULBUS_UNREACHABLE_MESSAGE(msg)         GHULBUS_INTERNAL_UNREACHABLE_IMPL(msg)
 #elif defined GHULBUS_CONFIG_ASSERT_LEVEL_PRODUCTION
 #   define GHULBUS_ASSERT_MESSAGE(x, msg)
 #   define GHULBUS_ASSERT_DBG_MESSAGE(x, msg)
-#   define GHULBUS_ASSERT_PRD_MESSAGE(x, msg) GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
+#   define GHULBUS_ASSERT_PRD_MESSAGE(x, msg)       GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
 
 #   define GHULBUS_PRECONDITION_MESSAGE(x, msg)
 #   define GHULBUS_PRECONDITION_DBG_MESSAGE(x, msg)
 #   define GHULBUS_PRECONDITION_PRD_MESSAGE(x, msg) GHULBUS_INTERNAL_PRECONDITION_IMPL(x, msg)
+
+#   define GHULBUS_UNREACHABLE()
+#   define GHULBUS_UNREACHABLE_MESSAGE(msg)
 #else
 /** Default-level assert with custom message.
  * @copydetails GHULBUS_ASSERT
@@ -89,6 +95,16 @@
  * @copydetails GHULBUS_ASSERT
  */
 #   define GHULBUS_PRECONDITION_PRD_MESSAGE(x, msg) GHULBUS_INTERNAL_PRECONDITION_IMPL(x, msg)
+
+/** Default-level check to mark unreachable code.
+ * When control flow passes this macro, it will trigger an assertion failure.
+ * This check will not be compiled if `GHULBUS_CONFIG_ASSERT_LEVEL_PRODUCTION` is defined.
+ */
+#   define GHULBUS_UNREACHABLE()                    GHULBUS_INTERNAL_UNREACHABLE_IMPL(nullptr)
+ /** Default-level check to mark unreachable code with custom message.
+ * @copydetails GHULBUS_UNREACHABLE
+ */
+#   define GHULBUS_UNREACHABLE_MESSAGE(msg)         GHULBUS_INTERNAL_UNREACHABLE_IMPL(msg)
 #endif
 
 /** @cond
@@ -103,21 +119,30 @@
 #   define GHULBUS_INTERNAL_HELPER_FUNCTION __func__
 #endif
 
-#define GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)                                                                         \
-    do {                                                                                                             \
-        if(!(x)) {                                                                                                   \
-            ::GHULBUS_BASE_NAMESPACE::Assert::assertionFailed(                                                       \
-                ::GHULBUS_BASE_NAMESPACE::Assert::HandlerParameters{                                                 \
-                                                            __FILE__,                                                \
-                                                            __LINE__,                                                \
-                                                            GHULBUS_INTERNAL_HELPER_FUNCTION,                        \
-                                                            #x,                                                      \
-                                                            msg,                                                     \
-                                                            ::GHULBUS_BASE_NAMESPACE::Assert::getHandlerParam() } ); \
-        }                                                                                                            \
-    } while(false)
+#define GHULBUS_INTERNAL_HELPER_DUMMY_FOR_SEMICOLON (void)(0)
+
+#define GHULBUS_INTERNAL_SIGNAL_ASSERTION_FAILURE(cond, msg)                                                         \
+    ::GHULBUS_BASE_NAMESPACE::Assert::assertionFailed(                                                               \
+        ::GHULBUS_BASE_NAMESPACE::Assert::HandlerParameters{                                                         \
+                                                    __FILE__,                                                        \
+                                                    __LINE__,                                                        \
+                                                    GHULBUS_INTERNAL_HELPER_FUNCTION,                                \
+                                                    #cond,                                                           \
+                                                    msg,                                                             \
+                                                    ::GHULBUS_BASE_NAMESPACE::Assert::getHandlerParam() } );         \
+
+
+#define GHULBUS_INTERNAL_ASSERT_IMPL(cond, msg)                                                                      \
+    if(!(cond)) {                                                                                                    \
+        GHULBUS_INTERNAL_SIGNAL_ASSERTION_FAILURE(cond, msg)                                                         \
+    } GHULBUS_INTERNAL_HELPER_DUMMY_FOR_SEMICOLON                                                                    \
+
 
 #define GHULBUS_INTERNAL_PRECONDITION_IMPL(x, msg) GHULBUS_INTERNAL_ASSERT_IMPL(x, msg)
+
+#define GHULBUS_INTERNAL_UNREACHABLE_IMPL(msg) \
+    GHULBUS_INTERNAL_SIGNAL_ASSERTION_FAILURE(Unreachable_Code, msg)\
+    GHULBUS_INTERNAL_HELPER_DUMMY_FOR_SEMICOLON
 /** @endcond
  */
 
