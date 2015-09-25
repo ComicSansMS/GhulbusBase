@@ -171,12 +171,10 @@ namespace GHULBUS_BASE_NAMESPACE
         /** Determine the behavior in case of failing assertions.
          * The default assertion handler is failAbort().
          * @param[in] handler Function to be invoked by assertionFailed() in case of a failing assertion.
-         * @note This function is thread-safe.
          */
         GHULBUS_BASE_API void setAssertionHandler(Handler handler) noexcept;
 
         /** Retrieve the current assertion handler.
-         * @note This function is thread-safe.
          */
         GHULBUS_BASE_API Handler getAssertionHandler() noexcept;
 
@@ -184,7 +182,6 @@ namespace GHULBUS_BASE_NAMESPACE
          * The assert macros will set the user_param field of HandlerParameters to this value. The default parameters
          * ignore this parameter, but a user can use this to pass additional state to a custom assertion handler.
          * The initial value for the user parameter is NULL.
-         * @note This function is thread-safe.
          */
         GHULBUS_BASE_API void setHandlerParam(void* user_param) noexcept;
 
@@ -192,7 +189,6 @@ namespace GHULBUS_BASE_NAMESPACE
         * The assert macros will set the user_param field of HandlerParameters to this value. The default parameters
         * ignore this parameter, but a user can use this to pass additional state to a custom assertion handler.
         * The initial value for the user parameter is NULL.
-        * @note This function is thread-safe.
         */
         GHULBUS_BASE_API void* getHandlerParam() noexcept;
 
@@ -200,7 +196,6 @@ namespace GHULBUS_BASE_NAMESPACE
          * This is called by the assert macros if an assertion fails. The active assertion handler can be changed
          * with setAssertionHandler().
          * @param[in] param Description of the failing assertion.
-         * @note This function is thread-safe.
          */
         GHULBUS_BASE_API void assertionFailed(HandlerParameters const& param);
 
