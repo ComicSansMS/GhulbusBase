@@ -1,22 +1,29 @@
 
 language: cpp
+sudo: required
 
 compiler:
   - gcc
+addons: &gcc5
+  apt:
+    packages: g++-5
+    sources: *sources
 
 install:
+  - which $COMPILER
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
   - wget http://cmake.org/files/v3.3/cmake-3.3.2.tar.gz
   - tar -xvf cmake-3.3.2.tar.gz > /dev/null
   - mkdir cmake-build
-  - mkdir cmake-install
   - cd cmake-build
-  - cmake -DCMAKE_INSTALL_PREFIX=${DEPS_DIR}/cmake-install ../cmake-3.3.2 > /dev/null
-  - make && make install > /dev/null
+  - cmake ../cmake-3.3.2 > /dev/null
+  - make > /dev/null
+  - make install
 
 after_install:
-  - ${DEPS_DIR}/cmake-install/bin/cmake --version
+  - which cmake
+  - cmake --version
 
 before_script:
   - cd ${TRAVIS_BUILD_DIR}
