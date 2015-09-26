@@ -11,7 +11,7 @@
 
 #include <boost/predef/compiler.h>
 
-#ifndef BOOST_COMP_MSVC
+#if !BOOST_COMP_MSVC
 /** @cond
  */
 namespace boost
@@ -63,8 +63,8 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         namespace Tags
         {
-            struct description { };
-            struct filename { };
+            struct GHULBUS_BASE_API description { };
+            struct GHULBUS_BASE_API filename { };
         }
         /** Decorator record types.
          */
