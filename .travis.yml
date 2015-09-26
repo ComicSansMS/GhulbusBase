@@ -4,6 +4,18 @@ language: cpp
 compiler:
   - gcc
 
+install:
+  - wget https://cmake.org/files/v3.3/cmake-3.3.2.tar.gz
+  - tar -xvf cmake-3.3.2.tar.gz
+  - mkdir cmake-build
+  - cd cmake-build
+  - cmake ../cmake-3.3.2
+  - make && make install
+
+after_install:
+  - which cmake
+  - cmake --version
+
 before_script:
   - cd build
   - cmake ..
