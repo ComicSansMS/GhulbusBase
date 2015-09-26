@@ -10,7 +10,6 @@ addons: &gcc5
     sources: *sources
 
 install:
-  - which $COMPILER
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
   - wget http://cmake.org/files/v3.3/cmake-3.3.2.tar.gz
