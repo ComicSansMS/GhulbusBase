@@ -21,66 +21,43 @@ void checkExceptionType(void (*fun)())
     }
     CHECK(was_caught);
 }
+
+template<typename T>
+auto checkHandlerEquals(T const& t)
+{
+    auto const handler_func = Assert::getAssertionHandler().target<T>();
+    REQUIRE(handler_func);
+    CHECK(*handler_func == t);
+}
 }
 
 TEST_CASE("Assert")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
-    SECTION("Default handler is failAbort")
-    {
-        CHECK(Assert::getAssertionHandler() == &Assert::failAbort);
-    }
+    // Default handler is failAbort
+    checkHandlerEquals(&Assert::failAbort);
 
     SECTION("Getting and setting handler")
     {
         auto handler = [](Assert::HandlerParameters const& param) {};
-        Assert::setAssertionHandler(handler);
-        REQUIRE(Assert::getAssertionHandler() == handler);
-        Assert::setAssertionHandler(&Assert::failAbort);
-    }
-
-    SECTION("Default user param is NULL")
-    {
-        CHECK(Assert::getHandlerParam() == nullptr);
-    }
-
-    SECTION("Getting and setting user param")
-    {
-        int token;
-        Assert::setHandlerParam(&token);
-        REQUIRE(Assert::getHandlerParam() == &token);
-        Assert::setHandlerParam(nullptr);
+        Assert::setAssertionHandler(&Assert::failHalt);
+        checkHandlerEquals(&Assert::failHalt);
     }
 
     SECTION("assertionFailed should invoke currently active handler")
     {
-        auto handler = [](Assert::HandlerParameters const& param) {
+        bool handlerWasCalled = false;
+        auto handler = [&handlerWasCalled](Assert::HandlerParameters const& param) {
             CHECK(param.file == std::string("file"));
             CHECK(param.line == 42);
             CHECK(param.function == std::string("func"));
             CHECK(param.condition == std::string("cond"));
             CHECK(param.message == std::string("msg"));
-            *static_cast<bool*>(param.user_param) = true;
+            handlerWasCalled = true;
         };
         Assert::setAssertionHandler(handler);
-        bool handlerWasCalled = false;
-        Assert::assertionFailed(Assert::HandlerParameters{ "file", 42, "func", "cond", "msg", &handlerWasCalled });
+        Assert::assertionFailed(Assert::HandlerParameters{ "file", 42, "func", "cond", "msg" });
         CHECK(handlerWasCalled);
-        Assert::setAssertionHandler(&Assert::failAbort);
-    }
-
-    SECTION("Macro invokes assertion handler with user param")
-    {
-        auto handler = [](Assert::HandlerParameters const& param) {
-            CHECK(param.message == std::string("hello from the test!"));
-            *static_cast<bool*>(param.user_param) = true;
-        };
-        Assert::setAssertionHandler(handler);
-        bool handlerWasCalled = false;
-        Assert::setHandlerParam(&handlerWasCalled);
-        GHULBUS_ASSERT_PRD_MESSAGE(false, "hello from the test!");
-        CHECK(handlerWasCalled);
-        Assert::setAssertionHandler(&Assert::failAbort);
     }
 
     SECTION("Throw Handler throws AssertFailed exception")
@@ -93,7 +70,6 @@ TEST_CASE("Assert")
         checkExceptionType<Exceptions::AssertFailed>(doAssert);
         checkExceptionType<Exception>(doAssert);
         checkExceptionType<std::exception>(doAssert);
-        Assert::setAssertionHandler(&Assert::failAbort);
     }
 
     SECTION("Assert with message should forward message to exception")
@@ -110,7 +86,6 @@ TEST_CASE("Assert")
             was_caught = true;
         }
         CHECK(was_caught);
-        Assert::setAssertionHandler(&Assert::failAbort);
     }
 
     SECTION("Precondition macro should behave the same as assert")
@@ -118,7 +93,6 @@ TEST_CASE("Assert")
         Assert::setAssertionHandler(&Assert::failThrow);
         auto doAssert = []() { GHULBUS_PRECONDITION_PRD(false); };
         checkExceptionType<Exceptions::AssertFailed>(doAssert);
-        Assert::setAssertionHandler(&Assert::failAbort);
     }
 
     SECTION("Unreachable macro should trigger failing assertion")
@@ -126,6 +100,7 @@ TEST_CASE("Assert")
         Assert::setAssertionHandler(&Assert::failThrow);
         auto doAssert = []() { GHULBUS_UNREACHABLE(); };
         checkExceptionType<Exceptions::AssertFailed>(doAssert);
-        Assert::setAssertionHandler(&Assert::failAbort);
     }
+
+    Assert::setAssertionHandler(&Assert::failAbort);
 }

@@ -4,7 +4,6 @@
 
 #include <boost/exception/all.hpp>
 
-#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -16,7 +15,6 @@ namespace GHULBUS_BASE_NAMESPACE
 namespace
 {
 Assert::Handler g_AssertionHandler(&Assert::failAbort);
-void*           g_AssertionHandlerUserParam(nullptr);
 
 std::ostream& operator<<(std::ostream& os, Assert::HandlerParameters const& handler_param)
 {
@@ -43,19 +41,9 @@ void setAssertionHandler(Handler handler) noexcept
     g_AssertionHandler = handler;
 }
 
-Handler getAssertionHandler() noexcept
+Handler const& getAssertionHandler() noexcept
 {
     return g_AssertionHandler;
-}
-
-void setHandlerParam(void* user_param) noexcept
-{
-    g_AssertionHandlerUserParam = user_param;
-}
-
-void* getHandlerParam() noexcept
-{
-    return g_AssertionHandlerUserParam;
 }
 
 void assertionFailed(HandlerParameters const& param)

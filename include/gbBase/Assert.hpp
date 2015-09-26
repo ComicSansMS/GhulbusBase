@@ -11,6 +11,8 @@
 
 #include <boost/predef/compiler.h>
 
+#include <functional>
+
 #if defined GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG && defined GHULBUS_CONFIG_ASSERT_LEVEL_PRODUCTION
 #   error Assert level debug and production cannot be set at the same time.
 #endif
@@ -128,8 +130,7 @@
                                                     __LINE__,                                                        \
                                                     GHULBUS_INTERNAL_HELPER_FUNCTION,                                \
                                                     #cond,                                                           \
-                                                    msg,                                                             \
-                                                    ::GHULBUS_BASE_NAMESPACE::Assert::getHandlerParam() } );         \
+                                                    msg } );
 
 
 #define GHULBUS_INTERNAL_ASSERT_IMPL(cond, msg)                                                                      \
@@ -159,14 +160,12 @@ namespace GHULBUS_BASE_NAMESPACE
             char const* function;           //!< Name of the function that contains the failing assertion.
             char const* condition;          //!< Textual representation of the condition that failed the assertion.
             char const* message;            //!< Optional user-provided description. NULL if none provided.
-            void*       user_param;         //!< User-provided parameter. The default handlers ignore this, but a user
-                                            //!< can use this to pass additional state to a custom assertion handler.
         };
 
         /** Assertion Handler signature.
          * Functions of this type can be registered with setAssertionHandler() to be invoked by assertionFailed().
          */
-        typedef void (*Handler)(HandlerParameters const&);
+        typedef std::function<void(HandlerParameters const&)> Handler;
 
         /** Determine the behavior in case of failing assertions.
          * The default assertion handler is failAbort().
@@ -176,21 +175,7 @@ namespace GHULBUS_BASE_NAMESPACE
 
         /** Retrieve the current assertion handler.
          */
-        GHULBUS_BASE_API Handler getAssertionHandler() noexcept;
-
-        /** Specify the user parameter to be passed to the assertion handler.
-         * The assert macros will set the user_param field of HandlerParameters to this value. The default parameters
-         * ignore this parameter, but a user can use this to pass additional state to a custom assertion handler.
-         * The initial value for the user parameter is NULL.
-         */
-        GHULBUS_BASE_API void setHandlerParam(void* user_param) noexcept;
-
-        /** Specify the user parameter to be passed to the assertion handler.
-        * The assert macros will set the user_param field of HandlerParameters to this value. The default parameters
-        * ignore this parameter, but a user can use this to pass additional state to a custom assertion handler.
-        * The initial value for the user parameter is NULL.
-        */
-        GHULBUS_BASE_API void* getHandlerParam() noexcept;
+        GHULBUS_BASE_API Handler const& getAssertionHandler() noexcept;
 
         /** Invoke the assertion handler.
          * This is called by the assert macros if an assertion fails. The active assertion handler can be changed
