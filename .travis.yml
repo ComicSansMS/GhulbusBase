@@ -5,16 +5,18 @@ compiler:
   - gcc
 
 install:
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
   - wget http://cmake.org/files/v3.3/cmake-3.3.2.tar.gz
   - tar -xvf cmake-3.3.2.tar.gz
   - mkdir cmake-build
+  - mkdir cmake-install
   - cd cmake-build
-  - cmake ../cmake-3.3.2
+  - cmake -DCMAKE_INSTALL_DIR=${DEPS_DIR}/cmake-install ../cmake-3.3.2
   - make && make install
 
 after_install:
-  - which cmake
-  - cmake --version
+  - ${DEPS_DIR}/cmake-install/bin/cmake --version
 
 before_script:
   - cd build
