@@ -48,13 +48,13 @@ namespace Log
 
 #ifndef GHULBUS_CONFIG_DISABLE_LOGGING
 #define GHULBUS_LOG(log_level, expr) do {                                                                            \
-        if(::GHULBUS_BASE_NAMESPACE::Log::getLogLevel() <= ::GHULBUS_BASE_NAMESPACE::LogLevel::log_level) { \
-            ::GHULBUS_BASE_NAMESPACE::Log::log(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level, \
-                std::move(static_cast<std::stringstream&>( \
-                    ::GHULBUS_BASE_NAMESPACE::Log::createLogStream(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level) \
-                        << expr) ) \
-            ); \
-        } \
+        if(::GHULBUS_BASE_NAMESPACE::Log::getLogLevel() <= ::GHULBUS_BASE_NAMESPACE::LogLevel::log_level) {          \
+            ::GHULBUS_BASE_NAMESPACE::Log::log(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level,                        \
+                static_cast<std::stringstream&&>(                                                                    \
+                    ::GHULBUS_BASE_NAMESPACE::Log::createLogStream(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level)    \
+                        << expr) )                                                                                   \
+            );                                                                                                       \
+        }                                                                                                            \
     } while(false)
 #endif
 

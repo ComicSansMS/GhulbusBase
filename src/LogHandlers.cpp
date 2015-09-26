@@ -48,7 +48,7 @@ LogSynchronizeMutex::operator LogHandler()
 
 
 LogAsync::LogAsync(LogHandler downstream_handler)
-    :m_downstreamHandler(downstream_handler), m_stopRequested(false)
+    :m_stopRequested(false), m_downstreamHandler(downstream_handler)
 {
 }
 
