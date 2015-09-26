@@ -73,14 +73,14 @@ LogHandler getLogHandler()
     return g_LogHandler;
 }
 
-std::ostringstream createLogStream(LogLevel level)
+std::stringstream createLogStream(LogLevel level)
 {
-    std::ostringstream log_stream;
+    std::stringstream log_stream;
     log_stream << level << ' ' << current_time << " - ";
     return log_stream;
 }
 
-void log(LogLevel log_level, std::ostringstream&& log_stream)
+void log(LogLevel log_level, std::stringstream&& log_stream)
 {
     auto const handler = getLogHandler();
     if (handler)
