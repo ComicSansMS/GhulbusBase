@@ -8,19 +8,21 @@ install:
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
   - wget http://cmake.org/files/v3.3/cmake-3.3.2.tar.gz
-  - tar -xvf cmake-3.3.2.tar.gz
+  - tar -xvf cmake-3.3.2.tar.gz > /dev/null
   - mkdir cmake-build
   - mkdir cmake-install
   - cd cmake-build
   - cmake -DCMAKE_INSTALL_PREFIX=${DEPS_DIR}/cmake-install ../cmake-3.3.2 > /dev/null
-  - make && make install
+  - make && make install > /dev/null
 
 after_install:
   - ${DEPS_DIR}/cmake-install/bin/cmake --version
 
 before_script:
+  - cd ${TRAVIS_BUILD_DIR}
   - cd build
-  - cmake ..
+  - echo ${DEPS_DIR}
+  - ${DEPS_DIR}/cmake-install/bin/cmake ..
 
 script:
   - make
