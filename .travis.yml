@@ -12,7 +12,7 @@ install:
   - mkdir cmake-build
   - mkdir cmake-install
   - cd cmake-build
-  - cmake -DCMAKE_INSTALL_DIR=${DEPS_DIR}/cmake-install ../cmake-3.3.2
+  - cmake -DCMAKE_INSTALL_PREFIX=${DEPS_DIR}/cmake-install ../cmake-3.3.2 > /dev/null
   - make && make install
 
 after_install:
