@@ -9,6 +9,14 @@
 
 #include <gbBase/config.hpp>
 
+/** @cond
+ */
+namespace boost
+{
+    /* we need to declare error_info as export to allow rtti over shared library boundaries on gcc/clang */
+    template <class Tag,class T> class GHULBUS_BASE_API error_info;
+}
+/** @endcond */
 #include <boost/exception/all.hpp>
 
 #include <boost/predef/compiler.h>
@@ -52,6 +60,7 @@ namespace GHULBUS_BASE_NAMESPACE
         namespace Tags
         {
             struct description { };
+            struct filename { };
         }
         /** Decorator record types.
          */
@@ -65,6 +74,7 @@ namespace GHULBUS_BASE_NAMESPACE
         /** A user-provided string describing the error.
          */
         typedef boost::error_info<Tags::description, std::string> description;
+        typedef boost::error_info<Tags::filename, std::string> filename;
         /// @}
     }
 
@@ -104,6 +114,12 @@ namespace GHULBUS_BASE_NAMESPACE
         /** Thrown by interfaces that have not yet been implemented.
         */
         class GHULBUS_BASE_API NotImplemented : public impl::ExceptionImpl
+        {
+        };
+
+        /** Thrown when an I/O operation fails.
+        */
+        class GHULBUS_BASE_API IOError : public impl::ExceptionImpl
         {
         };
     }
