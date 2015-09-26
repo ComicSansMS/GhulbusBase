@@ -23,8 +23,9 @@ void checkExceptionType(void (*fun)())
 }
 
 template<typename T>
-auto checkHandlerEquals(T const& t)
+void checkHandlerEquals(T const& t)
 {
+    using namespace GHULBUS_BASE_NAMESPACE;
     auto const handler_func = Assert::getAssertionHandler().target<T>();
     REQUIRE(handler_func);
     CHECK(*handler_func == t);

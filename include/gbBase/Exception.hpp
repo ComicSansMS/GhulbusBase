@@ -9,17 +9,21 @@
 
 #include <gbBase/config.hpp>
 
+#include <boost/predef/compiler.h>
+
+#ifndef BOOST_COMP_MSVC
 /** @cond
  */
 namespace boost
 {
-    /* we need to declare error_info as export to allow rtti over shared library boundaries on gcc/clang */
+    /* we need to declare error_info as export to allow rtti over shared library boundaries on gcc/clang.
+     * on the other hand, vc really doesn't like to see a definition for a dllimport class, hence the ifdef.
+     */
     template <class Tag,class T> class GHULBUS_BASE_API error_info;
 }
 /** @endcond */
+#endif
 #include <boost/exception/all.hpp>
-
-#include <boost/predef/compiler.h>
 
 #include <exception>
 #include <string>
