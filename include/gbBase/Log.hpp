@@ -52,7 +52,7 @@ namespace Log
             ::GHULBUS_BASE_NAMESPACE::Log::log(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level,                        \
                 static_cast<std::stringstream&&>(                                                                    \
                     ::GHULBUS_BASE_NAMESPACE::Log::createLogStream(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level)    \
-                        << expr) )                                                                                   \
+                        << expr)                                                                                     \
             );                                                                                                       \
         }                                                                                                            \
     } while(false)
