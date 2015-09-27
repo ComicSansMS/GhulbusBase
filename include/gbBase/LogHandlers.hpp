@@ -52,6 +52,7 @@ private:
 public:
     /** Construct a logger for logging to a file.
      * @param[in] filename Path to the log file. This file will be opened in append mode.
+     * @throw Exceptions::IOError If file could not be opened for writing.
      */
     GHULBUS_BASE_API LogToFile(char const* filename);
 
@@ -78,6 +79,8 @@ public:
     /** Adapting Constructor.
      * @param[in] downstream_handler The log handler that is to be wrapped.
      *                               The downstream handler need not be thread safe.
+     *                               The downstream handler must not be empty. If the downstream handler dies before
+     *                               this adapter, the behavior is undefined.
      */
     GHULBUS_BASE_API LogSynchronizeMutex(LogHandler downstream_handler);
 
