@@ -12,7 +12,7 @@ TEST_CASE("TestLogAsync")
     auto const original_log_level = Log::getLogLevel();
     auto const original_log_handler = Log::getLogHandler();
 
-    std::atomic<int> callCount = 0;
+    std::atomic<int> callCount(0);
     std::vector<std::string> messages;
     std::vector<LogLevel> levels;
     auto testHandler = [&callCount, &messages, &levels](LogLevel ll, std::stringstream&& sstr) {
