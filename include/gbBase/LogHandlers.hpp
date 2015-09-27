@@ -37,7 +37,7 @@ namespace Handlers
 GHULBUS_BASE_API void logToCout(LogLevel log_level, std::stringstream&& log_stream);
 
 /** Unsynchronized file logging.
- * All log messages will be appended to the given log file. Log messages may be buffered in memory but will be
+ * All log messages will be appended to the given log file. %Log messages may be buffered in memory but will be
  * flushed upon destruction of the handler object.
  * Logging is not synchronized, so logging concurrently from multiple threads is not safe with this handler.
  * Use one of the \ref log_handler_adapters "thread-safe adapters" LogSynchronizeMutex or LogAsync if you need to

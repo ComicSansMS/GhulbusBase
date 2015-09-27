@@ -13,6 +13,7 @@ set(GB_BASE_VERSION_MINOR 1)
 set(GB_BASE_VERSION_PATCH 0)
 set(GB_BASE_VERSION "${GB_BASE_VERSION_MAJOR}.${GB_BASE_VERSION_MINOR}.${GB_BASE_VERSION_PATCH}")
 
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED)
 
 set(GB_BASE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -39,6 +40,7 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestBase.cpp
     ${GB_BASE_TEST_DIR}/TestException.cpp
     ${GB_BASE_TEST_DIR}/TestLog.cpp
+    ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
 )
 
 add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})

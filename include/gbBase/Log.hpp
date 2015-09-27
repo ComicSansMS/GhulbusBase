@@ -91,7 +91,7 @@ namespace Log
 #ifndef GHULBUS_CONFIG_DISABLE_LOGGING
 /** Log a message.
  * Use this macro for logging a message. All log messages will be prepended by a textual representation of the given
- * log level and the current timestamp. Log messages will be forwarded to the log handler function returned by
+ * log level and the current timestamp. %Log messages will be forwarded to the log handler function returned by
  * Ghulbus::Log::getLogHandler().
  * @param[in] log_level One of the log level identifiers from Ghulbus::LogLevel *without* any additional qualifiers.
  *                      If this log level is lower than the one returned by Ghulbus::Log::getLogLevel(), no code

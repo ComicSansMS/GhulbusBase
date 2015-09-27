@@ -93,6 +93,20 @@ TEST_CASE("TestLog")
         CHECK(handlerWasCalled);
     }
 
+    SECTION("Printing different log levels")
+    {
+        for(auto const& ll : { LogLevel::Trace, LogLevel::Debug, LogLevel::Info,
+                               LogLevel::Warning, LogLevel::Error, LogLevel::Critical })
+        {
+            std::stringstream sstr;
+            sstr << ll;
+            auto const str = sstr.str();
+            REQUIRE(str.length() == 7);
+            CHECK(str[0] == '[');
+            CHECK(str[6] == ']');
+        }
+    }
+
     resetExpectations();
 }
 
