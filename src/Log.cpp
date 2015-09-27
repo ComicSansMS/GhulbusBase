@@ -15,15 +15,13 @@
 
 #include <atomic>
 #include <chrono>
-#include <iostream>
-#include <vector>
 
 namespace GHULBUS_BASE_NAMESPACE
 {
 namespace
 {
-std::atomic<LogLevel> g_CurrentLogLevel(LogLevel::Error);
-Log::LogHandler       g_LogHandler(&Log::Handlers::logToCout);
+std::atomic<LogLevel>                            g_currentLogLevel(LogLevel::Error);
+Log::LogHandler                                  g_logHandler(&Log::Handlers::logToCout);
 
 struct current_time_t {} current_time;
 inline std::ostream& operator<<(std::ostream& os, current_time_t const&)
@@ -55,22 +53,22 @@ namespace Log
 void setLogLevel(LogLevel log_level)
 {
     GHULBUS_ASSERT(log_level >= LogLevel::Trace && log_level <= LogLevel::Critical);
-    g_CurrentLogLevel.store(log_level);
+    g_currentLogLevel.store(log_level);
 }
 
 LogLevel getLogLevel()
 {
-    return g_CurrentLogLevel.load();
+    return g_currentLogLevel.load();
 }
 
 void setLogHandler(LogHandler handler)
 {
-    g_LogHandler = handler;
+    g_logHandler = handler;
 }
 
 LogHandler getLogHandler()
 {
-    return g_LogHandler;
+    return g_logHandler;
 }
 
 std::stringstream createLogStream(LogLevel level)
