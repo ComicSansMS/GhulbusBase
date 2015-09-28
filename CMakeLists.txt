@@ -151,7 +151,7 @@ if(GB_GENERATE_DOXYGEN_DOCUMENTATION)
     install(DIRECTORY ${GB_LIB_DOC_DIR}/html DESTINATION doc MESSAGE_NEVER)
 endif()
 
-include(CmakePackageConfigHelpers)
+include(CMakePackageConfigHelpers)
 configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/gbBaseConfig.cmake.in
     ${PROJECT_BINARY_DIR}/cmake/gbBaseConfig.cmake
     INSTALL_DESTINATION cmake
