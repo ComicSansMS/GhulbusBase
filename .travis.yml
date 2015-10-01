@@ -58,7 +58,7 @@ before_script:
   - cd ../build-shared-clang36
   - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
   - make
-  - cd ${TRAVIS_BUILD_DIR}/gbBase
+  - cd ${TRAVIS_BUILD_DIR}
 
 script:
   - cd build-static-gcc5
@@ -71,6 +71,6 @@ script:
   - make test
 
 after_script:
-  - cd ${TRAVIS_BUILD_DIR}/gbBase
+  - cd ${TRAVIS_BUILD_DIR}
   - cd build-static-gcc5
   - make doxygen-doc
