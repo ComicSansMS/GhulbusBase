@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.3)
 
 project(GhulbusBase)
 
+if($ENV{TRAVIS})
+    if($ENV{TRAVIS} STREQUAL "true")
+        message(STATUS "Building on Travis-CI.")
+        set(IS_TRAVIS_BUILD TRUE)
+    endif()
+endif()
+
 add_subdirectory(external)
 
 ###############################################################################
@@ -15,6 +22,9 @@ set(GB_BASE_VERSION "${GB_BASE_VERSION_MAJOR}.${GB_BASE_VERSION_MINOR}.${GB_BASE
 
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 set(GB_BASE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(GB_BASE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
@@ -48,6 +58,7 @@ target_compile_features(gbBase PRIVATE cxx_lambdas cxx_override cxx_range_for)
 target_compile_features(gbBase PUBLIC cxx_attributes cxx_func_identifier cxx_noexcept)
 target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}> $<BUILD_INTERFACE:${Boost_INCLUDE_DIR}>)
 target_link_libraries(gbBase PRIVATE hinnant_date)
+target_link_libraries(gbBase PUBLIC Threads::Threads)
 target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
 target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
@@ -80,17 +91,22 @@ if(GB_BUILD_TESTS)
 
     if(NOT TARGET Catch)
         include(ExternalProject)
-        if(WIN32)
-            set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip)
-            set(GB_EXTERNAL_CATCH_MD5 cda228922a1c9248364c99a3ff9cd9fa)
+        if(IS_TRAVIS_BUILD)     # on travis, use git for fetching instead of wget
+            set(GB_FETCH_EXTERNAL_CATCH
+                GIT_REPOSITORY https://github.com/philsquared/Catch.git
+                GIT_TAG 0c1c9fa9229c7358ce16c9910004a39290b20f5f)
+        elseif(WIN32)
+            set(GB_FETCH_EXTERNAL_CATCH
+                URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip
+                URL_HASH MD5=cda228922a1c9248364c99a3ff9cd9fa)
         else()
-            set(GB_EXTERNAL_CATCH_URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz)
-            set(GB_EXTERNAL_CATCH_MD5 a8dfb7be899a6e7fb30bd55d53426122)
+            set(GB_FETCH_EXTERNAL_CATCH
+                URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz
+                URL_HASH MD5=a8dfb7be899a6e7fb30bd55d53426122)
         endif()
         ExternalProject_Add(Catch-External
             PREFIX ${CMAKE_BINARY_DIR}/external/Catch
-            URL ${GB_EXTERNAL_CATCH_URL}
-            URL_HASH MD5=${GB_EXTERNAL_CATCH_MD5}
+            ${GB_FETCH_EXTERNAL_CATCH}
             CONFIGURE_COMMAND ""
             BUILD_COMMAND ""
             INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch.hpp
