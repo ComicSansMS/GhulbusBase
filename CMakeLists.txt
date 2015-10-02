@@ -64,6 +64,7 @@ target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 target_compile_options(gbBase PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
+target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
 option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
 include(GenerateExportHeader)
 generate_export_header(gbBase
