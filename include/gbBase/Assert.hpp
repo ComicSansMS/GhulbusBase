@@ -154,7 +154,7 @@ namespace GHULBUS_BASE_NAMESPACE
     namespace Assert {
         /** Parameter passed to an assertion \ref Handler.
          */
-        struct HandlerParameters {
+        struct GHULBUS_BASE_API HandlerParameters {
             char const* file;               //!< Name of the source file that triggered the failing assertion.
             long        line;               //!< Line in the source file that triggered the failing assertion.
             char const* function;           //!< Name of the function that contains the failing assertion.

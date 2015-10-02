@@ -19,7 +19,7 @@ namespace GHULBUS_BASE_NAMESPACE
  * Each log message is assigned a log level, indicating its severity.
  * Log levels are sorted from lowest to highest severity.
  */
-enum class LogLevel {
+enum class GHULBUS_BASE_API LogLevel {
     Trace,
     Debug,
     Info,
