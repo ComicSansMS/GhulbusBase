@@ -9,8 +9,6 @@
 
 #include <gbBase/config.hpp>
 
-#include <boost/predef/compiler.h>
-
 #include <functional>
 
 #if defined GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG && defined GHULBUS_CONFIG_ASSERT_LEVEL_PRODUCTION
@@ -111,11 +109,11 @@
 
 /** @cond
  */
-#if BOOST_COMP_MSVC
+#if defined _MSC_VER
 #   define GHULBUS_INTERNAL_HELPER_FUNCTION __FUNCSIG__
-#elif BOOST_COMP_GNUC
+#elif defined __clang__
 #   define GHULBUS_INTERNAL_HELPER_FUNCTION __PRETTY_FUNCTION__
-#elif BOOST_COMP_CLANG
+#elif defined __GNUC__
 #   define GHULBUS_INTERNAL_HELPER_FUNCTION __PRETTY_FUNCTION__
 #else
 #   define GHULBUS_INTERNAL_HELPER_FUNCTION __func__
@@ -195,11 +193,13 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         [[noreturn]] GHULBUS_BASE_API void failHalt(HandlerParameters const& param);
 
+#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
         /** Assertion handler that throws an exception.
          * This handler will throw an exception of type Ghulbus::Exceptions::AssertFailed.
          * The locational information of that exception will point to the location where the failing exception occured.
          */
         [[noreturn]] GHULBUS_BASE_API void failThrow(HandlerParameters const& param);
+#endif
     };
 }
 

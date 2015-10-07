@@ -20,8 +20,12 @@ set(GB_BASE_VERSION_MINOR 1)
 set(GB_BASE_VERSION_PATCH 0)
 set(GB_BASE_VERSION "${GB_BASE_VERSION_MAJOR}.${GB_BASE_VERSION_MINOR}.${GB_BASE_VERSION_PATCH}")
 
-set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost REQUIRED)
+option(GB_BASE_BUILD_BARE "Set this if you want to build without external dependencies; Some features will be disabled." OFF)
+
+if(NOT GB_BASE_BUILD_BARE)
+    set(Boost_USE_STATIC_LIBS ON)
+    find_package(Boost REQUIRED)
+endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -32,34 +36,51 @@ set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 set(GB_BASE_SOURCE_FILES
     ${GB_BASE_SOURCE_DIR}/Assert.cpp
-    ${GB_BASE_SOURCE_DIR}/Log.cpp
-    ${GB_BASE_SOURCE_DIR}/LogHandlers.cpp
 )
+if(NOT GB_BASE_BUILD_BARE)
+    list(APPEND GB_BASE_SOURCE_FILES
+        ${GB_BASE_SOURCE_DIR}/Log.cpp
+        ${GB_BASE_SOURCE_DIR}/LogHandlers.cpp
+    )
+endif()
 
 set(GB_BASE_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Log.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/LogHandlers.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
 )
+if(NOT GB_BASE_BUILD_BARE)
+    list(APPEND GB_BASE_HEADER_FILES
+        ${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
+        ${GB_BASE_INCLUDE_DIR}/gbBase/Log.hpp
+        ${GB_BASE_INCLUDE_DIR}/gbBase/LogHandlers.hpp
+    )
+endif()
 
 set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestAssert.cpp
     ${GB_BASE_TEST_DIR}/TestBase.cpp
-    ${GB_BASE_TEST_DIR}/TestException.cpp
-    ${GB_BASE_TEST_DIR}/TestLog.cpp
-    ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
 )
+if(NOT GB_BASE_BUILD_BARE)
+    list(APPEND GB_BASE_TEST_SOURCES
+        ${GB_BASE_TEST_DIR}/TestException.cpp
+        ${GB_BASE_TEST_DIR}/TestLog.cpp
+        ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
+    )
+endif()
 
 add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
 target_compile_features(gbBase PRIVATE cxx_lambdas cxx_override cxx_range_for)
 target_compile_features(gbBase PUBLIC cxx_attributes cxx_func_identifier cxx_noexcept)
-target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}> $<BUILD_INTERFACE:${Boost_INCLUDE_DIR}>)
-target_link_libraries(gbBase PRIVATE hinnant_date)
-target_link_libraries(gbBase PUBLIC Threads::Threads)
-target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
+target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}>)
+if(GB_BASE_BUILD_BARE)
+    target_compile_definitions(gbBase PUBLIC GHULBUS_CONFIG_BASE_BARE_BUILD)
+else()
+    target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${Boost_INCLUDE_DIR}>)
+    target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
+    target_link_libraries(gbBase PRIVATE hinnant_date)
+    target_link_libraries(gbBase PUBLIC Threads::Threads)
+endif()
 target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 target_compile_options(gbBase PRIVATE

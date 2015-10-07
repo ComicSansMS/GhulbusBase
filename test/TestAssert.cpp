@@ -1,6 +1,8 @@
 #include <gbBase/Assert.hpp>
 
+#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
 #include <gbBase/Exception.hpp>
+#endif
 
 #include <catch.hpp>
 
@@ -61,6 +63,7 @@ TEST_CASE("Assert")
         CHECK(handlerWasCalled);
     }
 
+#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
     SECTION("Throw Handler throws AssertFailed exception")
     {
         // the big gotcha of this test is that we throw across dll boundaries here.
@@ -88,19 +91,30 @@ TEST_CASE("Assert")
         }
         CHECK(was_caught);
     }
+#endif
 
     SECTION("Precondition macro should behave the same as assert")
     {
-        Assert::setAssertionHandler(&Assert::failThrow);
-        auto doAssert = []() { GHULBUS_PRECONDITION_PRD(false); };
-        checkExceptionType<Exceptions::AssertFailed>(doAssert);
+        bool handlerWasCalled = false;
+        auto handler = [&handlerWasCalled](Assert::HandlerParameters const&) {
+            handlerWasCalled = true;
+        };
+        Assert::setAssertionHandler(handler);
+        GHULBUS_PRECONDITION_PRD(true);
+        CHECK(!handlerWasCalled);
+        GHULBUS_PRECONDITION_PRD(false);
+        CHECK(handlerWasCalled);
     }
 
     SECTION("Unreachable macro should trigger failing assertion")
     {
-        Assert::setAssertionHandler(&Assert::failThrow);
-        auto doAssert = []() { GHULBUS_UNREACHABLE(); };
-        checkExceptionType<Exceptions::AssertFailed>(doAssert);
+        bool handlerWasCalled = false;
+        auto handler = [&handlerWasCalled](Assert::HandlerParameters const&) {
+            handlerWasCalled = true;
+        };
+        Assert::setAssertionHandler(handler);
+        GHULBUS_UNREACHABLE();
+        CHECK(handlerWasCalled);
     }
 
     Assert::setAssertionHandler(&Assert::failAbort);
