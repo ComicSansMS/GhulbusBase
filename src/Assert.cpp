@@ -43,7 +43,7 @@ void setAssertionHandler(Handler handler) noexcept
     g_AssertionHandler = handler;
 }
 
-Handler const& getAssertionHandler() noexcept
+Handler getAssertionHandler() noexcept
 {
     return g_AssertionHandler;
 }

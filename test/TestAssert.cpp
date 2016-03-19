@@ -24,43 +24,36 @@ void checkExceptionType(void (*fun)())
     CHECK(was_caught);
 }
 
-template<typename T>
-void checkHandlerEquals(T const& t)
-{
-    using namespace GHULBUS_BASE_NAMESPACE;
-    auto const handler_func = Assert::getAssertionHandler().target<T>();
-    REQUIRE(handler_func);
-    CHECK(*handler_func == t);
-}
+bool g_handlerWasCalled;
 }
 
 TEST_CASE("Assert")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
     // Default handler is failAbort
-    checkHandlerEquals(&Assert::failAbort);
+    CHECK(Assert::getAssertionHandler() == &Assert::failAbort);
 
     SECTION("Getting and setting handler")
     {
         auto handler = [](Assert::HandlerParameters const& param) {};
         Assert::setAssertionHandler(&Assert::failHalt);
-        checkHandlerEquals(&Assert::failHalt);
+        CHECK(Assert::getAssertionHandler() == &Assert::failHalt);
     }
 
     SECTION("assertionFailed should invoke currently active handler")
     {
-        bool handlerWasCalled = false;
-        auto handler = [&handlerWasCalled](Assert::HandlerParameters const& param) {
+        g_handlerWasCalled = false;
+        auto handler = [](Assert::HandlerParameters const& param) {
             CHECK(param.file == std::string("file"));
             CHECK(param.line == 42);
             CHECK(param.function == std::string("func"));
             CHECK(param.condition == std::string("cond"));
             CHECK(param.message == std::string("msg"));
-            handlerWasCalled = true;
+            g_handlerWasCalled = true;
         };
         Assert::setAssertionHandler(handler);
         Assert::assertionFailed(Assert::HandlerParameters{ "file", 42, "func", "cond", "msg" });
-        CHECK(handlerWasCalled);
+        CHECK(g_handlerWasCalled);
     }
 
 #ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
@@ -95,26 +88,26 @@ TEST_CASE("Assert")
 
     SECTION("Precondition macro should behave the same as assert")
     {
-        bool handlerWasCalled = false;
-        auto handler = [&handlerWasCalled](Assert::HandlerParameters const&) {
-            handlerWasCalled = true;
+        g_handlerWasCalled = false;
+        auto handler = [](Assert::HandlerParameters const&) {
+            g_handlerWasCalled = true;
         };
         Assert::setAssertionHandler(handler);
         GHULBUS_PRECONDITION_PRD(true);
-        CHECK(!handlerWasCalled);
+        CHECK(!g_handlerWasCalled);
         GHULBUS_PRECONDITION_PRD(false);
-        CHECK(handlerWasCalled);
+        CHECK(g_handlerWasCalled);
     }
 
     SECTION("Unreachable macro should trigger failing assertion")
     {
-        bool handlerWasCalled = false;
-        auto handler = [&handlerWasCalled](Assert::HandlerParameters const&) {
-            handlerWasCalled = true;
+        g_handlerWasCalled = false;
+        auto handler = [](Assert::HandlerParameters const&) {
+            g_handlerWasCalled = true;
         };
         Assert::setAssertionHandler(handler);
         GHULBUS_UNREACHABLE();
-        CHECK(handlerWasCalled);
+        CHECK(g_handlerWasCalled);
     }
 
     Assert::setAssertionHandler(&Assert::failAbort);

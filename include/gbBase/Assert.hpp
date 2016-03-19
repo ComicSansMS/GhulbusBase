@@ -163,7 +163,7 @@ namespace GHULBUS_BASE_NAMESPACE
         /** Assertion Handler signature.
          * Functions of this type can be registered with setAssertionHandler() to be invoked by assertionFailed().
          */
-        typedef std::function<void(HandlerParameters const&)> Handler;
+        typedef void(*Handler)(HandlerParameters const&);
 
         /** Determine the behavior in case of failing assertions.
          * The default assertion handler is failAbort().
@@ -173,7 +173,7 @@ namespace GHULBUS_BASE_NAMESPACE
 
         /** Retrieve the current assertion handler.
          */
-        GHULBUS_BASE_API Handler const& getAssertionHandler() noexcept;
+        GHULBUS_BASE_API Handler getAssertionHandler() noexcept;
 
         /** Invoke the assertion handler.
          * This is called by the assert macros if an assertion fails. The active assertion handler can be changed
