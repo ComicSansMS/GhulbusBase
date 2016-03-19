@@ -34,6 +34,8 @@ enum class GHULBUS_BASE_API LogLevel {
 GHULBUS_BASE_API std::ostream& operator<<(std::ostream& os, LogLevel log_level);
 
 /** Logging.
+ * @attention Logging currently relies on a global static std::function for storing the active LogHandler.
+ *            Because of this it is currently unsafe to log during static initialization or destruction.
  */
 namespace Log
 {
