@@ -200,7 +200,7 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         [[noreturn]] GHULBUS_BASE_API void failThrow(HandlerParameters const& param);
 #endif
-    };
+    }
 }
 
 #endif
