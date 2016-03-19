@@ -36,7 +36,7 @@ install:
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
   - echo "f3546812c11ce7f5d64dc132a566b749 *cmake-3.3.2-Linux-x86_64.tar.gz" > cmake_md5.txt
-  - travis_retry wget http://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz
+  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz
   - md5sum -c cmake_md5.txt
   - tar -xvf cmake-3.3.2-Linux-x86_64.tar.gz > /dev/null
   - mv cmake-3.3.2-Linux-x86_64 cmake-install
