@@ -12,14 +12,11 @@ endif()
 option(GB_GENERATE_COVERAGE_INFO "If set, line coverage info will be generated from debug test runs." OFF)
 if(GB_GENERATE_COVERAGE_INFO)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        add_compile_options(--coverage -fprofile-arcs -ftest-coverage)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")
         # this is an undocumented option for changing the output extension from *.cpp.ext
         # to *.ext; As there is no reasonable way to obtain the list of object files
         # this seems to be the best option to generate the naming gcov expects.
         set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)
         set(GCOV_COMMAND gcov CACHE STRING "Command to invoke to run gcov.")
-
     endif()
 endif()
 
@@ -160,7 +157,9 @@ if(GB_BUILD_TESTS)
     target_link_libraries(gbBase_Test gbBase Catch)
     add_test(NAME TestBase COMMAND gbBase_Test)
 
-    if(GB_GENERATE_COVERAGE_INFO)
+    if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
+        target_compile_options(gbBase PRIVATE --coverage -fprofile-arcs -ftest-coverage)
+        target_link_libraries(gbBase -fprofile-arcs -ftest-coverage)
         add_custom_target(gbBase_TestCoverage
             COMMAND ${GCOV_COMMAND} -o CMakeFiles/gbBase.dir/src ${GB_BASE_SOURCE_FILES}
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
