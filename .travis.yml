@@ -75,7 +75,6 @@ script:
   - make test
   - cd ../build-coverage-gcc5
   - make test
-  - make gbBase_TestCoverage
   - cd ../build-static-clang36
   - make test
   - cd ../build-shared-clang36
@@ -88,5 +87,6 @@ after_script:
 
 after_success:
   - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc5
+  - make gbBase_TestCoverage
   - bash <(curl -s https://codecov.io/bash)
 
