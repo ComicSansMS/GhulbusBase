@@ -159,7 +159,7 @@ if(GB_BUILD_TESTS)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
         target_compile_options(gbBase PRIVATE --coverage -fprofile-arcs -ftest-coverage)
-        target_link_libraries(gbBase -fprofile-arcs -ftest-coverage)
+        target_link_libraries(gbBase PRIVATE -fprofile-arcs -ftest-coverage)
         add_custom_target(gbBase_TestCoverage
             COMMAND ${GCOV_COMMAND} -o CMakeFiles/gbBase.dir/src ${GB_BASE_SOURCE_FILES}
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
