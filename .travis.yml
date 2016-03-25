@@ -45,7 +45,7 @@ install:
 
 before_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - mkdir build-static-gcc5 && mkdir build-shared-gcc5 && mkdir build-bare-gcc5 && mkdir build-static-clang36 && mkdir build-shared-clang36
+  - mkdir build-static-gcc5 && mkdir build-shared-gcc5 && mkdir build-bare-gcc5 && mkdir build-coverage-gcc5 && mkdir build-static-clang36 && mkdir build-shared-clang36
   - cd build-static-gcc5
   - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
   - make
@@ -54,6 +54,9 @@ before_script:
   - make
   - cd ../build-bare-gcc5
   - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
+  - make
+  - cd ../build-coverage-gcc5
+  - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-5 ..
   - make
   - cd ../build-static-clang36
   - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
@@ -70,6 +73,9 @@ script:
   - make test
   - cd ../build-bare-gcc5
   - make test
+  - cd ../build-coverage-gcc5
+  - make test
+  - make gbBase_TestCoverage
   - cd ../build-static-clang36
   - make test
   - cd ../build-shared-clang36
@@ -79,3 +85,8 @@ after_script:
   - cd ${TRAVIS_BUILD_DIR}
   - cd build-static-gcc5
   - make doxygen-doc
+
+after_success:
+  - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc5
+  - bash <(curl -s https://codecov.io/bash)
+
