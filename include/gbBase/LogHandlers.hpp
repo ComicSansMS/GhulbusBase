@@ -36,6 +36,12 @@ namespace Handlers
  */
 GHULBUS_BASE_API void logToCout(LogLevel log_level, std::stringstream&& log_stream);
 
+#ifdef WIN32
+/** Logs to an attached debugger via the OutputDebugString() Win32 API function.
+*/
+GHULBUS_BASE_API void logToWindowsDebugger(LogLevel log_level, std::stringstream&& log_stream);
+#endif
+
 /** Unsynchronized file logging.
  * All log messages will be appended to the given log file. %Log messages may be buffered in memory but will be
  * flushed upon destruction of the handler object.

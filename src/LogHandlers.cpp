@@ -5,6 +5,16 @@
 #include <iostream>
 #include <iterator>
 
+#ifdef _WIN32
+#   ifndef WIN32_LEAN_AND_MEAN
+#      define WIN32_LEAN_AND_MEAN
+#   endif
+#   ifndef NOMINMAX
+#      define NOMINMAX
+#   endif
+#   include <Windows.h>
+#endif
+
 /* Initial performance tests for log handlers:
  * Logging 100k messages à 480 byte from single thread
  * MSVC 2015, Release:
@@ -28,6 +38,13 @@ void logToCout(LogLevel log_level, std::stringstream&& log_stream)
     std::ostream& outstr = (log_level >= LogLevel::Error) ? std::cerr : std::cout;
     outstr << log_stream.str() << '\n';
 }
+
+#ifdef WIN32
+void logToWindowsDebugger(LogLevel /* log_level */, std::stringstream&& log_stream)
+{
+    OutputDebugStringA((log_stream.str() + "\n").c_str());
+}
+#endif
 
 LogToFile::LogToFile(char const* filename)
     : m_logFile(filename, std::ios_base::out | std::ios_base::app)
