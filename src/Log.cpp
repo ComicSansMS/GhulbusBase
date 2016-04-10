@@ -26,8 +26,11 @@ Log::LogHandler                                  g_logHandler(&Log::Handlers::lo
 struct current_time_t {} current_time;
 inline std::ostream& operator<<(std::ostream& os, current_time_t const&)
 {
+#if _MSC_FULL_VER < 190023918
+    using date::floor;
+#endif
     std::chrono::system_clock::time_point const now = std::chrono::system_clock::now();
-    date::day_point const today = date::floor<date::days>(now);
+    date::day_point const today = floor<date::days>(now);
     // the duration cast here determines the precision of the resulting time_of_day in the output
     auto const time_since_midnight = std::chrono::duration_cast<std::chrono::milliseconds>(now - today);
     return os << date::year_month_day(today) << ' ' << date::make_time(time_since_midnight);
