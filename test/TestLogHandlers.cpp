@@ -3,6 +3,22 @@
 #include <catch.hpp>
 
 #include <atomic>
+#include <utility>
+
+namespace {
+    struct MockHandler {
+    public:
+        std::vector<std::pair<GHULBUS_BASE_NAMESPACE::LogLevel, std::string>> received_messages;
+    public:
+        operator GHULBUS_BASE_NAMESPACE::Log::LogHandler()
+        {
+            using namespace GHULBUS_BASE_NAMESPACE;
+            return [this](LogLevel log_level, std::stringstream&& os) {
+                received_messages.push_back(std::make_pair(log_level, os.str()));
+            };
+        }
+    };
+}
 
 TEST_CASE("TestLogAsync")
 {
@@ -76,6 +92,36 @@ TEST_CASE("TestLogAsync")
         CHECK(levels[4] == LogLevel::Error);
         CHECK(levels[5] == LogLevel::Critical);
     }
+
+    Log::setLogHandler(original_log_handler);
+    Log::setLogLevel(original_log_level);
+    Log::shutdownLogging();
+}
+
+TEST_CASE("TestLogMultiSink")
+{
+    using namespace GHULBUS_BASE_NAMESPACE;
+    Log::initializeLogging();
+    auto const original_log_level = Log::getLogLevel();
+    auto const original_log_handler = Log::getLogHandler();
+
+    MockHandler handler1;
+    MockHandler handler2;
+    Log::Handlers::LogMultiSink multi_sink_handler(handler1, handler2);
+    Log::setLogHandler(multi_sink_handler);
+    Log::setLogLevel(LogLevel::Trace);
+
+    CHECK(handler1.received_messages.empty());
+    CHECK(handler2.received_messages.empty());
+
+    char const* testtext = "Testtext";
+    GHULBUS_LOG(Info, testtext);
+
+    REQUIRE(handler1.received_messages.size() == 1);
+    REQUIRE(handler2.received_messages.size() == 1);
+    CHECK(handler1.received_messages[0].first == LogLevel::Info);
+    CHECK(handler1.received_messages[0].second.find(testtext) != std::string::npos);
+    CHECK(handler2.received_messages[0] == handler1.received_messages[0]);
 
     Log::setLogHandler(original_log_handler);
     Log::setLogLevel(original_log_level);

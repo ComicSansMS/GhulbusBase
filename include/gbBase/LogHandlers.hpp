@@ -149,6 +149,31 @@ public:
      */
     GHULBUS_BASE_API operator LogHandler();
 };
+
+/** Forwards each log message to two downstream handlers.
+ * Use this if you want to log to two different sinks, for instance to a log file and the console.
+ * @note This handler will duplicate the log message before passing it on to the downstream handlers,
+ *       which is potentially expensive. When combining the LogMultiSink with the LogAsync it is
+ *       therefore desirable to have the LogMultiSink as the downstream and the LogAsync as the
+ *       top-level handler.
+ */
+class LogMultiSink
+{
+private:
+    LogHandler m_downstreamHandlers[2];
+public:
+    /** Adapting Constructor.
+     * @param[in] first_downstream_handler The first log handler that is to be wrapped.
+     * @param[in] first_downstream_handler The second log handler that is to be wrapped.
+     */
+    GHULBUS_BASE_API LogMultiSink(LogHandler first_downstream_handler,
+                                  LogHandler second_downstream_handler);
+
+    /** Convert to a LogHandler function to pass to Ghulbus::Log::setLogHandler().
+     * @attention Note that an object must not be destroyed while it is set as log handler.
+     */
+    GHULBUS_BASE_API operator LogHandler();
+};
 /** @} */
 }
 }

@@ -116,6 +116,21 @@ LogAsync::operator LogHandler()
         m_condvar.notify_one();
     };
 }
+
+LogMultiSink::LogMultiSink(LogHandler first_downstream_handler,
+                           LogHandler second_downstream_handler)
+    :m_downstreamHandlers{first_downstream_handler, second_downstream_handler}
+{
+}
+
+LogMultiSink::operator LogHandler()
+{
+    return [this](LogLevel log_level, std::stringstream&& os) {
+        std::stringstream second_os(os.str());
+        m_downstreamHandlers[0](log_level, std::move(os));
+        m_downstreamHandlers[1](log_level, std::move(second_os));
+    };
+}
 }
 }
 }
