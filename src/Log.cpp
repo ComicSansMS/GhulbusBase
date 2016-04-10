@@ -15,6 +15,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstring>
 #include <type_traits>
 
 namespace GHULBUS_BASE_NAMESPACE
