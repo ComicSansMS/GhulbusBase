@@ -32,7 +32,19 @@ TEST_CASE("TestLog")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
 
+    Log::initializeLogging();
+
     checkExpectations();
+
+    SECTION("Multiple calls to initialize/shutdown")
+    {
+        Log::initializeLogging();
+        Log::initializeLogging();
+        Log::shutdownLogging();
+        Log::initializeLogging();
+        Log::shutdownLogging();
+        Log::shutdownLogging();
+    }
 
     SECTION("Setting log handler")
     {
@@ -108,12 +120,14 @@ TEST_CASE("TestLog")
     }
 
     resetExpectations();
+    Log::shutdownLogging();
 }
 
 #if 0
 TEST_CASE("LogPerformance")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
+    Log::initializeLogging();
 
     int const N_MESSAGES = 100000;
     char const* message_text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
@@ -150,5 +164,7 @@ TEST_CASE("LogPerformance")
     resetExpectations();
     GHULBUS_LOG(Error, "Elapsed time was "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count() << "msecs.");
+
+    Log::shutdownLogging();
 }
 #endif

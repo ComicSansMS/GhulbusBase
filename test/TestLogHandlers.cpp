@@ -9,6 +9,7 @@ TEST_CASE("TestLogAsync")
     // not the most useful test in the world, but the vast majority of LogAsyncs implementation deals with
     // thread synchronization, which is hard to cover in a unit test.
     using namespace GHULBUS_BASE_NAMESPACE;
+    Log::initializeLogging();
     auto const original_log_level = Log::getLogLevel();
     auto const original_log_handler = Log::getLogHandler();
 
@@ -78,4 +79,5 @@ TEST_CASE("TestLogAsync")
 
     Log::setLogHandler(original_log_handler);
     Log::setLogLevel(original_log_level);
+    Log::shutdownLogging();
 }

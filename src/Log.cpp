@@ -15,13 +15,34 @@
 
 #include <atomic>
 #include <chrono>
+#include <type_traits>
 
 namespace GHULBUS_BASE_NAMESPACE
 {
 namespace
 {
-std::atomic<LogLevel>                            g_currentLogLevel(LogLevel::Error);
-Log::LogHandler                                  g_logHandler(&Log::Handlers::logToCout);
+/** Non-trivial static state that requires explicit initialization via initializeLogging().
+ */
+struct StaticState {
+    std::atomic<LogLevel> currentLogLevel;
+    Log::LogHandler       logHandler;
+
+    StaticState()
+        :currentLogLevel(LogLevel::Error), logHandler(&Log::Handlers::logToCout)
+    {}
+};
+
+/** Trivial static state that is initialized at compile time.
+ * This is mainly used for doing the bookkeeping for initializeLogging() and shutdownLogging().
+ */
+struct StaticData {
+    int staticStorageRefcount;
+    char staticStateStorage[sizeof(StaticState)];
+    StaticState* logState;
+} g_staticData;
+
+static_assert(std::is_trivial<StaticData>::value,
+              "Non-trivial types not allowed in StaticData to avoid static initialization order headaches.");
 
 struct current_time_t {} current_time;
 inline std::ostream& operator<<(std::ostream& os, current_time_t const&)
@@ -53,25 +74,52 @@ std::ostream& operator<<(std::ostream& os, LogLevel log_level)
 
 namespace Log
 {
+void initializeLogging()
+{
+    auto& staticData = g_staticData;
+    GHULBUS_ASSERT(staticData.staticStorageRefcount >= 0);
+    if(staticData.staticStorageRefcount == 0)
+    {
+        staticData.logState = new(staticData.staticStateStorage) StaticState();
+    }
+    ++staticData.staticStorageRefcount;
+}
+
+void shutdownLogging()
+{
+    auto& staticData = g_staticData;
+    GHULBUS_ASSERT(g_staticData.staticStorageRefcount > 0);
+    if(staticData.staticStorageRefcount == 1)
+    {
+         staticData.logState->~StaticState();
+         std::memset(staticData.staticStateStorage, 0, sizeof(staticData.staticStateStorage));
+    }
+    --staticData.staticStorageRefcount;
+}
+
 void setLogLevel(LogLevel log_level)
 {
     GHULBUS_ASSERT(log_level >= LogLevel::Trace && log_level <= LogLevel::Critical);
-    g_currentLogLevel.store(log_level);
+    auto& staticData = g_staticData;
+    staticData.logState->currentLogLevel.store(log_level);
 }
 
 LogLevel getLogLevel()
 {
-    return g_currentLogLevel.load();
+    auto const& staticData = g_staticData;
+    return staticData.logState->currentLogLevel.load();
 }
 
 void setLogHandler(LogHandler handler)
 {
-    g_logHandler = handler;
+    auto& staticData = g_staticData;
+    staticData.logState->logHandler = handler;
 }
 
 LogHandler getLogHandler()
 {
-    return g_logHandler;
+    auto const& staticData = g_staticData;
+    return staticData.logState->logHandler;
 }
 
 std::stringstream createLogStream(LogLevel level)

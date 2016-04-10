@@ -34,8 +34,6 @@ enum class GHULBUS_BASE_API LogLevel {
 GHULBUS_BASE_API std::ostream& operator<<(std::ostream& os, LogLevel log_level);
 
 /** Logging.
- * @attention Logging currently relies on a global static std::function for storing the active LogHandler.
- *            Because of this it is currently unsafe to log during static initialization or destruction.
  */
 namespace Log
 {
@@ -49,6 +47,27 @@ namespace Log
      * @see setLogHandler() getLogHandler()
      */
     typedef std::function<void(LogLevel, std::stringstream&&)> LogHandler;
+
+    /** Initialize the logging subsystem.
+     * This function must be called before any other function from the Log namespace.
+     * It initializes the static data that is used by the logging subsystem. To free any allocated data,
+     * call shutdownLogging(). When calling this function multiple times, each invocation must have
+     * a matching call to shutdownLogging() and only the last call will actually perform the shutdown.
+     * @attention It is not safe to call this function concurrently with any other function from Log,
+     *            including initializeLogging() itself.
+     * @see shutdownLogging()
+     */
+    GHULBUS_BASE_API void initializeLogging();
+
+    /** Shuts down the logging subsystem.
+     * Frees any data allocated by initializeLogging(). In case of multiple calls to initializeLogging(),
+     * each call must be matched with a call to shutdownLogging() and only the last call will actually
+     * perform the shutdown.
+     * @attention It is not safe to call this function concurrently with any other function from Log,
+     *            including shutdownLogging() itself.
+     * @see initializeLogging()
+     */
+    GHULBUS_BASE_API void shutdownLogging();
 
     /** Set the system wide log level.
      * If a log message has a lower level than the system log level, it will not be evaluated by the GHULBUS_LOG
