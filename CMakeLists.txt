@@ -58,6 +58,7 @@ endif()
 set(GB_BASE_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/RingPool.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
 )
 if(NOT GB_BASE_BUILD_BARE)
@@ -71,6 +72,7 @@ endif()
 set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestAssert.cpp
     ${GB_BASE_TEST_DIR}/TestBase.cpp
+    ${GB_BASE_TEST_DIR}/TestRingPool.cpp
 )
 if(NOT GB_BASE_BUILD_BARE)
     list(APPEND GB_BASE_TEST_SOURCES
