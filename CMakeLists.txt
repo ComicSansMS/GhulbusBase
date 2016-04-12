@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.3)
 
 project(GhulbusBase)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if($ENV{TRAVIS})
     if($ENV{TRAVIS} STREQUAL "true")
         message(STATUS "Building on Travis-CI.")
