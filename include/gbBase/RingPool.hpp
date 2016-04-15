@@ -14,6 +14,8 @@
 #include <atomic>
 #include <cstring>
 #include <memory>
+#include <mutex>
+#include <new>
 #include <vector>
 
 namespace GHULBUS_BASE_NAMESPACE
@@ -40,6 +42,17 @@ namespace RingPoolPolicies
                 return nullptr;
             }
         };
+
+        template<typename Exception_T = std::bad_alloc>
+        struct Throw
+        {
+            static void* allocate_failed()
+            {
+                throw Exception_T();
+            }
+        };
+
+        // @todo: fallback allocator
     }
 
     template<typename FallbackPolicy_T>
@@ -50,29 +63,44 @@ namespace RingPoolPolicies
     using DefaultPolicies = Policies<FallbackPolicies::ReturnNullptr>;
 }
 
+/**
+ * - freeing never blocks allocations
+ * - allocations never block each other
+ * - freeing blocks if order is different from allocation order
+ */
 template<class Policies_T>
 class RingPool_T
 {
 private:
-    std::atomic<std::size_t> m_rightPtr;    // offset to the beginning of the unallocated memory
-    std::atomic<std::size_t> m_leftPtr;     // offset to the beginning of the allocated memory
+    std::atomic<std::size_t> m_rightPtr;    // offset to the beginning of the unallocated memory region
+    std::atomic<std::size_t> m_leftPtr;     // offset to the beginning of the allocated memory region
     std::size_t const m_poolCapacity;
     std::unique_ptr<char[]> m_storage;
+    std::atomic<std::size_t> m_paddingPtr;   // in case the last allocation in the buffer does not exactly hit
+                                             // the ring boundary, we have to leave some empty space at the end.
+                                             // if this happens, this offset points to the start of the empty area,
+                                             // that extends until m_poolCapacity. will be 0 if the end of the buffer
+                                             // is currently in the unallocated region (between rightPtr and leftPtr).
+    std::mutex m_freeListMutex;
+    std::vector<char*> m_freeList;
 public:
     inline RingPool_T(std::size_t poolCapacity);
 
     RingPool_T(RingPool_T const&) = delete;
     RingPool_T& operator=(RingPool_T const&) = delete;
 
-    inline void* allocate(std::size_t requested_size);
+    void* allocate(std::size_t requested_size);
 
-    inline void free(void* ptr);
+    void free(void* ptr);
+
+private:
+    inline void* allocate_block_at(std::size_t offset, std::size_t size);
 };
 
 template<class Policies_T>
 RingPool_T<Policies_T>::RingPool_T(std::size_t poolCapacity)
     :m_rightPtr(0), m_leftPtr(0), m_poolCapacity(poolCapacity),
-     m_storage(std::make_unique<char[]>(poolCapacity))
+     m_storage(std::make_unique<char[]>(poolCapacity)), m_paddingPtr(0)
 {
 }
 
@@ -93,17 +121,18 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
                 } else {
                     // allocate from the beginning
                     if(m_rightPtr.compare_exchange_weak(expected_right, requested_size)) {
-                        auto const basePtr = m_storage.get();
-                        std::memcpy(basePtr, &requested_size, sizeof(std::size_t));
-                        return basePtr + sizeof(size_t);
+                        // we wrapped around the ring; set the padding pointer so that we can skip the padding
+                        // area when this block is freed again
+                        std::size_t expected_padding = 0;
+                        auto const res = m_paddingPtr.compare_exchange_strong(expected_padding, expected_right);
+                        GHULBUS_ASSERT(res);
+                        return allocate_block_at(0u, requested_size);
                     }
                 }
             } else {
                 // allocate at rightPtr
                 if(m_rightPtr.compare_exchange_weak(expected_right, expected_right + requested_size)) {
-                    auto const basePtr = m_storage.get() + expected_right;
-                    std::memcpy(basePtr, &requested_size, sizeof(std::size_t));
-                    return basePtr + sizeof(size_t);
+                    return allocate_block_at(expected_right, requested_size);
                 }
             }
         } else {
@@ -114,13 +143,19 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
             } else {
                 // allocate at rightPtr
                 if(m_rightPtr.compare_exchange_weak(expected_right, expected_right + requested_size)) {
-                    auto const basePtr = m_storage.get() + expected_right;
-                    std::memcpy(basePtr, &requested_size, sizeof(std::size_t));
-                    return basePtr + sizeof(size_t);
+                    return allocate_block_at(expected_right, requested_size);
                 }
             }
         }
     }
+}
+
+template<class Policies_T>
+void* RingPool_T<Policies_T>::allocate_block_at(std::size_t offset, std::size_t size)
+{
+    auto const basePtr = m_storage.get() + offset;
+    std::memcpy(basePtr, &size, sizeof(std::size_t));
+    return basePtr + sizeof(size_t);
 }
 
 template<class Policies_T>
@@ -132,7 +167,16 @@ void RingPool_T<Policies_T>::free(void* ptr)
     GHULBUS_ASSERT_MESSAGE(baseptr == m_storage.get() + m_leftPtr,
                            "RingPool elements must be freed in the order in which they were allocated.");
     m_leftPtr.fetch_add(elementSize);
-    // todo: what if we free the last element at the end of the ring buffer?
+    if (m_leftPtr == m_paddingPtr)
+    {
+        // we freed the last element at the end of the ring buffer
+        m_leftPtr.store(0);
+        m_paddingPtr.store(0);
+    }
+
+    // @todo: maintain free list
+    // - frees that occur out of order go to free list
+    // - when to check free list? can we avoid locking on every free?
 }
 
 using RingPool = RingPool_T<RingPoolPolicies::DefaultPolicies>;
