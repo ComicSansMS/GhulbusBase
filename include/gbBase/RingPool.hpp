@@ -11,6 +11,7 @@
 
 #include <gbBase/Assert.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <cstring>
 #include <memory>
