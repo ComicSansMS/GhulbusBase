@@ -67,6 +67,24 @@ namespace RingPoolPolicies
  * - freeing never blocks allocations
  * - allocations never block each other
  * - freeing blocks if order is different from allocation order
+ * Freeing elements out-of-order pushed them onto the free list instead. The free list is maintained lazily.
+ * An element will stay on the free list even if the elements that blocked it from being freed are no longer allocated.
+ * The free list will be cleaned from elements that are eligible for being freed only when
+ *  - A free() call cannot free its argument and has to put it on the free list. The rationale here is that since we
+ *    anyway need to acquire the lock to put a new element on the free list, we might as well clean it up. The lazy
+ *    cleanup approach has the advantage that there is no overhead at all for the case where elements are freed in the
+ *    order of allocation. Note that the cleanup might result in all elements being freed, including the one that
+ *    triggered the cleanup in the first place.
+ *  - An allocate() call cannot find a suitably big memory block. This is not ideal, as allocations are supposed to be
+ *    fast, but it is sometimes unavoidable. For instance, if the element allocated first is freed last, all other
+ *    elements will stay on the free list. That way, large chunks of memory can be occupied by elements on the
+ *    free list and it might be hard to get another allocation to succeed due to lack of free memory.
+ *    However, if we cannot get an allocation through, we also won't get another free call, which might effectively
+ *    lock us out of the pool. We thus also attempt a free list clean on failing allocations. Since failing allocations
+ *    should be an exceptional case, this seems acceptable.
+ *  - The user calls cleanPendingElementsFromFreeList(). Consider doing this if you know that a particular free call
+ *    makes a large portion of the free list eligible for cleanup and you'd rather pay the cost for the cleanup now
+ *    than on the next free() or allocate().
  */
 template<class Policies_T>
 class RingPool_T
@@ -82,7 +100,9 @@ private:
                                              // that extends until m_poolCapacity. will be 0 if the end of the buffer
                                              // is currently in the unallocated region (between rightPtr and leftPtr).
     std::mutex m_freeListMutex;
-    std::vector<std::size_t> m_freeList;
+    std::vector<std::size_t> m_freeList;     // elements can only be freed in the order in which they were allocated;
+                                             // elements that are freed out-of-order will be moved to the free list
+                                             // instead and await their turn.
 public:
     inline RingPool_T(std::size_t poolCapacity);
 
@@ -93,8 +113,15 @@ public:
 
     void free(void* ptr);
 
+    bool cleanPendingElementsFromFreeList();
+
 private:
     inline void* allocate_block_at(std::size_t offset, std::size_t size);
+
+    /** Private helper containing common parts of free() and cleanPendingElementsFromFreeList().
+     * @attention Only safe to call while lock to m_freeListMutex is being held.
+     */
+    inline bool tryToFreeNextElementInFreeList(std::size_t& leftPtr, std::size_t const& paddingPtr);
 };
 
 template<class Policies_T>
@@ -117,6 +144,7 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
                 // no room to the right, attempt wrap-around and allocate at the beginning
                 if(requested_size >= left) {
                     // requested data too big; does not fit empty space
+                    if(cleanPendingElementsFromFreeList()) { continue; }
                     return Policies_T::FallbackPolicy::allocate_failed();
                 } else {
                     // allocate from the beginning
@@ -125,7 +153,7 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
                         // area when this block is freed again
                         std::size_t expected_padding = 0;
                         auto const res = m_paddingPtr.compare_exchange_strong(expected_padding, expected_right);
-                        GHULBUS_ASSERT(res);
+                        GHULBUS_ASSERT_DBG(res);
                         return allocate_block_at(0u, requested_size);
                     }
                 }
@@ -139,6 +167,7 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
             // rightPtr is left of leftPtr; allocated section does span ring boundaries
             if(expected_right + requested_size >= left) {
                 // requested data too big; does not fit empty space
+                if(cleanPendingElementsFromFreeList()) { continue; }
                 return Policies_T::FallbackPolicy::allocate_failed();
             } else {
                 // allocate at rightPtr
@@ -161,6 +190,9 @@ void* RingPool_T<Policies_T>::allocate_block_at(std::size_t offset, std::size_t 
 template<class Policies_T>
 void RingPool_T<Policies_T>::free(void* ptr)
 {
+    if(!ptr) {
+        return;
+    }
     char* baseptr = static_cast<char*>(ptr) - sizeof(std::size_t);
     std::size_t elementSize;
     std::memcpy(&elementSize, baseptr, sizeof(std::size_t));
@@ -183,20 +215,7 @@ void RingPool_T<Policies_T>::free(void* ptr)
         auto const paddingPtr = m_paddingPtr.load();
         bool elementWasFreed = false;
         for(;;) {
-            // check if the leftPtr element is in the free list;
-            // since freeing elements at leftPtr does not check the freelist, we won't notice if leftPtr moves to an
-            // element on the free list
-            auto const it = std::find(begin(m_freeList), end(m_freeList), leftPtr);
-            if(it != end(m_freeList)) {
-                // we found an element to be freed
-                std::size_t it_element_size;
-                std::memcpy(&it_element_size, m_storage.get() + (*it), sizeof(std::size_t));
-                leftPtr += it_element_size;
-                if(leftPtr == paddingPtr) {
-                    leftPtr = 0;
-                }
-                m_freeList.erase(it);
-            } else {
+            if(!tryToFreeNextElementInFreeList(leftPtr, paddingPtr)) {
                 // no element on the free list hit; but maybe the original element became free in an earlier iteration
                 if(leftPtr == element_index) {
                     leftPtr += elementSize;
@@ -219,6 +238,45 @@ void RingPool_T<Policies_T>::free(void* ptr)
         if(!elementWasFreed) {
             m_freeList.push_back(element_index);
         }
+    }
+}
+
+template<class Policies_T>
+bool RingPool_T<Policies_T>::cleanPendingElementsFromFreeList()
+{
+    std::unique_lock<std::mutex> lk(m_freeListMutex);
+    auto const leftPtr_old = m_leftPtr.load();
+    auto leftPtr = leftPtr_old;
+    auto const paddingPtr = m_paddingPtr.load();
+    while(tryToFreeNextElementInFreeList(leftPtr, paddingPtr))
+        ;
+    if(leftPtr != leftPtr_old) {
+        m_leftPtr.store(leftPtr);
+        if(leftPtr < leftPtr_old) {
+            m_paddingPtr.store(0);
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template<class Policies_T>
+bool RingPool_T<Policies_T>::tryToFreeNextElementInFreeList(std::size_t& leftPtr, std::size_t const& paddingPtr)
+{
+    auto const it = std::find(begin(m_freeList), end(m_freeList), leftPtr);
+    if(it != end(m_freeList)) {
+        // we found an element to be freed
+        std::size_t it_element_size;
+        std::memcpy(&it_element_size, m_storage.get() + (*it), sizeof(std::size_t));
+        leftPtr += it_element_size;
+        if(leftPtr == paddingPtr) {
+            leftPtr = 0;
+        }
+        m_freeList.erase(it);
+        return true;
+    } else {
+        return false;
     }
 }
 
