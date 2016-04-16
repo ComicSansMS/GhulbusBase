@@ -17,6 +17,9 @@ TEST_CASE("Ring pool allocator")
         rp.free(p1);
         auto p3 = rp.allocate(500);
         REQUIRE(p3);
+        rp.free(p3);
+        rp.free(p2);
+        rp.free(rp.allocate(5));
     }
 }
 

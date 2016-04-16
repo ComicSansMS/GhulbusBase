@@ -82,7 +82,7 @@ private:
                                              // that extends until m_poolCapacity. will be 0 if the end of the buffer
                                              // is currently in the unallocated region (between rightPtr and leftPtr).
     std::mutex m_freeListMutex;
-    std::vector<char*> m_freeList;
+    std::vector<std::size_t> m_freeList;
 public:
     inline RingPool_T(std::size_t poolCapacity);
 
@@ -164,19 +164,62 @@ void RingPool_T<Policies_T>::free(void* ptr)
     char* baseptr = static_cast<char*>(ptr) - sizeof(std::size_t);
     std::size_t elementSize;
     std::memcpy(&elementSize, baseptr, sizeof(std::size_t));
-    GHULBUS_ASSERT_MESSAGE(baseptr == m_storage.get() + m_leftPtr,
-                           "RingPool elements must be freed in the order in which they were allocated.");
-    m_leftPtr.fetch_add(elementSize);
-    if (m_leftPtr == m_paddingPtr)
+    std::size_t const element_index = baseptr - m_storage.get();
+    if(element_index == m_leftPtr)
     {
-        // we freed the last element at the end of the ring buffer
-        m_leftPtr.store(0);
-        m_paddingPtr.store(0);
+        // ptr is the element at left; free it immediately
+        m_leftPtr.fetch_add(elementSize);
+        if (m_leftPtr == m_paddingPtr)
+        {
+            // we freed the last element at the end of the ring buffer; wrap around and clear padding
+            m_leftPtr.store(0);
+            m_paddingPtr.store(0);
+        }
+    } else
+    {
+        std::unique_lock<std::mutex> lk(m_freeListMutex);
+        auto const leftPtr_old = m_leftPtr.load();
+        auto leftPtr = leftPtr_old;
+        auto const paddingPtr = m_paddingPtr.load();
+        bool elementWasFreed = false;
+        for(;;) {
+            // check if the leftPtr element is in the free list;
+            // since freeing elements at leftPtr does not check the freelist, we won't notice if leftPtr moves to an
+            // element on the free list
+            auto const it = std::find(begin(m_freeList), end(m_freeList), leftPtr);
+            if(it != end(m_freeList)) {
+                // we found an element to be freed
+                std::size_t it_element_size;
+                std::memcpy(&it_element_size, m_storage.get() + (*it), sizeof(std::size_t));
+                leftPtr += it_element_size;
+                if(leftPtr == paddingPtr) {
+                    leftPtr = 0;
+                }
+                m_freeList.erase(it);
+            } else {
+                // no element on the free list hit; but maybe the original element became free in an earlier iteration
+                if(leftPtr == element_index) {
+                    leftPtr += elementSize;
+                    if(leftPtr == paddingPtr) {
+                        leftPtr = 0;
+                    }
+                    elementWasFreed = true;
+                } else {
+                    // no more elements left to be freed
+                    break;
+                }
+            }
+        }
+        if(leftPtr != leftPtr_old) {
+            m_leftPtr.store(leftPtr);
+            if(leftPtr < leftPtr_old) {
+                m_paddingPtr.store(0);
+            }
+        }
+        if(!elementWasFreed) {
+            m_freeList.push_back(element_index);
+        }
     }
-
-    // @todo: maintain free list
-    // - frees that occur out of order go to free list
-    // - when to check free list? can we avoid locking on every free?
 }
 
 using RingPool = RingPool_T<RingPoolPolicies::DefaultPolicies>;
