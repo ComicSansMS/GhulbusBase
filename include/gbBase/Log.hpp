@@ -103,6 +103,8 @@ namespace Log
     /** Invoke the current log handler.
      * Invoke the function returned by getLogHandler() with the given arguments.
      * If the current log handler is the empty function, this function does nothing.
+     * @note This function does *not* filter messages based on the current log level.
+     *       Use the GHULBUS_LOG macro instead if message filtering is desired.
      */
     GHULBUS_BASE_API void log(LogLevel log_level, std::stringstream&& log_stream);
 }
@@ -126,11 +128,21 @@ namespace Log
    GHULBUS_LOG(Info, "The magic number is " << 42 << ".");
    @endcode
  */
-#define GHULBUS_LOG(log_level, expr) do {                                                                            \
-        if(::GHULBUS_BASE_NAMESPACE::Log::getLogLevel() <= ::GHULBUS_BASE_NAMESPACE::LogLevel::log_level) {          \
-            ::GHULBUS_BASE_NAMESPACE::Log::log(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level,                        \
+#define GHULBUS_LOG(log_level, expr) GHULBUS_LOG_QUALIFIED(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level, expr)
+
+/** Same as \ref GHULBUS_LOG, except that the log_level parameter has to be fully qualified.
+ * Use this for example if the log level is to be determined from a variable at runtime.
+ * @b Example
+   @code
+   Log::LogLevel loglvl = Log::LogLevel::Info;
+   GHULBUS_LOG_QUALIFIED(loglvl, "The magic number is " << 42 << ".");
+   @endcode
+ */
+#define GHULBUS_LOG_QUALIFIED(log_level_qualified, expr) do {                                                        \
+        if(::GHULBUS_BASE_NAMESPACE::Log::getLogLevel() <= log_level_qualified) {                                    \
+            ::GHULBUS_BASE_NAMESPACE::Log::log(log_level_qualified,                                                  \
                 static_cast<std::stringstream&&>(                                                                    \
-                    ::GHULBUS_BASE_NAMESPACE::Log::createLogStream(::GHULBUS_BASE_NAMESPACE::LogLevel::log_level)    \
+                    ::GHULBUS_BASE_NAMESPACE::Log::createLogStream(log_level_qualified)                              \
                         << expr)                                                                                     \
             );                                                                                                       \
         }                                                                                                            \
