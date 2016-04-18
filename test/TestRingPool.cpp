@@ -21,6 +21,22 @@ TEST_CASE("Ring pool allocator")
         rp.free(p2);
         rp.free(rp.allocate(5));
     }
+
+    SECTION("NewFallback")
+    {
+        Memory::RingPool_T<
+            Memory::RingPoolPolicies::Policies<Memory::RingPoolPolicies::FallbackPolicies::AllocateWithGlobalNew>>
+            rp(1000);
+        auto p1 = rp.allocate(800);
+        REQUIRE(p1);
+        auto p2 = rp.allocate(800);
+        CHECK(p2);
+        auto p3 = rp.allocate(800);
+        CHECK(p3);
+        rp.free(p1);
+        rp.free(p2);
+        rp.free(p3);
+    }
 }
 
 

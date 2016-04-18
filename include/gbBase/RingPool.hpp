@@ -29,31 +29,55 @@ namespace RingPoolPolicies
     {
         struct ReturnNullptr
         {
-            static void* allocate_failed()
+            static void* allocate_failed(std::size_t)
             {
                 return nullptr;
             }
+
+            static void free_allocate_failed(void*)
+            {}
         };
 
         struct Assert
         {
-            static void* allocate_failed()
+            static void* allocate_failed(std::size_t)
             {
                 GHULBUS_ASSERT_MESSAGE(false, "Allocator capacity exceeded.");
                 return nullptr;
             }
+
+            static void free_allocate_failed(void*)
+            {}
         };
 
         template<typename Exception_T = std::bad_alloc>
         struct Throw
         {
-            static void* allocate_failed()
+            static void* allocate_failed(std::size_t)
             {
                 throw Exception_T();
             }
+
+            static void free_allocate_failed(void*)
+            {}
         };
 
-        // @todo: fallback allocator
+        struct AllocateWithGlobalNew
+        {
+            static void* allocate_failed(std::size_t requested_size)
+            {
+                auto ret =  new char[requested_size];
+                std::size_t const token = 0;
+                std::memcpy(ret, &token, sizeof(std::size_t));
+                return (ret + sizeof(std::size_t));
+            }
+
+            static void free_allocate_failed(void* ptr)
+            {
+                auto base_ptr = static_cast<char*>(ptr) - sizeof(std::size_t);
+                delete[] base_ptr;
+            }
+        };
     }
 
     template<typename FallbackPolicy_T>
@@ -146,7 +170,7 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
                 if(requested_size >= left) {
                     // requested data too big; does not fit empty space
                     if(cleanPendingElementsFromFreeList()) { continue; }
-                    return Policies_T::FallbackPolicy::allocate_failed();
+                    return Policies_T::FallbackPolicy::allocate_failed(requested_size);
                 } else {
                     // allocate from the beginning
                     if(m_rightPtr.compare_exchange_weak(expected_right, requested_size)) {
@@ -169,7 +193,7 @@ void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
             if(expected_right + requested_size >= left) {
                 // requested data too big; does not fit empty space
                 if(cleanPendingElementsFromFreeList()) { continue; }
-                return Policies_T::FallbackPolicy::allocate_failed();
+                return Policies_T::FallbackPolicy::allocate_failed(requested_size);
             } else {
                 // allocate at rightPtr
                 if(m_rightPtr.compare_exchange_weak(expected_right, expected_right + requested_size)) {
@@ -197,6 +221,11 @@ void RingPool_T<Policies_T>::free(void* ptr)
     char* baseptr = static_cast<char*>(ptr) - sizeof(std::size_t);
     std::size_t elementSize;
     std::memcpy(&elementSize, baseptr, sizeof(std::size_t));
+    if(elementSize == 0u) {
+        // element size 0 is reserved for the fallback policy
+        Policies_T::FallbackPolicy::free_allocate_failed(ptr);
+        return;
+    }
     std::size_t const element_index = baseptr - m_storage.get();
     if(element_index == m_leftPtr)
     {
