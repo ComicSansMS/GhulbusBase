@@ -160,14 +160,16 @@ template<class Policies_T>
 void* RingPool_T<Policies_T>::allocate(std::size_t requested_size)
 {
     requested_size += sizeof(size_t);
+    std::size_t padding = (sizeof(std::size_t) + requested_size) % alignof(std::size_t);
+    requested_size += padding;
     for(;;) {
         auto expected_right = m_rightPtr.load();
         auto const left = m_leftPtr.load();
         if(left <= expected_right) {
             // rightPtr is right of leftPtr; allocated section does not span ring boundaries
-            if(expected_right + requested_size >= m_poolCapacity) {
+            if(expected_right + requested_size > m_poolCapacity) {
                 // no room to the right, attempt wrap-around and allocate at the beginning
-                if(requested_size >= left) {
+                if(requested_size > left) {
                     // requested data too big; does not fit empty space
                     if(cleanPendingElementsFromFreeList()) { continue; }
                     return Policies_T::FallbackPolicy::allocate_failed(requested_size);

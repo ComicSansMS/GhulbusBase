@@ -8,8 +8,8 @@ TEST_CASE("Ring pool allocator")
 
     SECTION("foo")
     {
-        Memory::RingPool rp(1026);
-        auto p1 = rp.allocate(501);
+        Memory::RingPool rp(1024);
+        auto p1 = rp.allocate(500);
         REQUIRE(p1);
         auto p2 = rp.allocate(500);
         REQUIRE(p2);
@@ -31,7 +31,7 @@ TEST_CASE("Ring pool allocator")
         REQUIRE(p1);
         auto p2 = rp.allocate(800);
         CHECK(p2);
-        auto p3 = rp.allocate(800);
+        auto p3 = rp.allocate(0);
         CHECK(p3);
         rp.free(p1);
         rp.free(p2);
