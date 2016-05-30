@@ -40,12 +40,14 @@ namespace Assert
 {
 void setAssertionHandler(Handler handler) noexcept
 {
-    g_AssertionHandler = handler;
+    auto& static_handler = g_AssertionHandler;
+    static_handler = handler;
 }
 
 Handler getAssertionHandler() noexcept
 {
-    return g_AssertionHandler;
+    auto const& static_handler = g_AssertionHandler;
+    return static_handler;
 }
 
 void assertionFailed(HandlerParameters const& param)
