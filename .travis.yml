@@ -8,7 +8,7 @@ addons: &clang34
   apt:
     packages:
     # compiler
-      - clang-3.6
+#      - clang-3.6
       - g++-5
       - gcc-5
       - ninja-build
@@ -26,12 +26,12 @@ addons: &clang34
       - libboost1.55-all-dev
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.6
+#      - llvm-toolchain-precise-3.6
       - boost-latest
 
 install:
   - gcc-5 --version
-  - clang-3.6 --version
+#  - clang-3.6 --version
   # install CMake 3.3
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
@@ -58,12 +58,12 @@ before_script:
   - cd ../build-coverage-gcc5
   - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-5 ..
   - make
-  - cd ../build-static-clang36
-  - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
-  - make
-  - cd ../build-shared-clang36
-  - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
-  - make
+#  - cd ../build-static-clang36
+#  - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
+#  - make
+#  - cd ../build-shared-clang36
+#  - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+#  - make
   - cd ${TRAVIS_BUILD_DIR}
 
 script:
@@ -75,10 +75,10 @@ script:
   - make test
   - cd ../build-coverage-gcc5
   - make test
-  - cd ../build-static-clang36
-  - make test
-  - cd ../build-shared-clang36
-  - make test
+#  - cd ../build-static-clang36
+#  - make test
+#  - cd ../build-shared-clang36
+#  - make test
 
 after_script:
   - cd ${TRAVIS_BUILD_DIR}
