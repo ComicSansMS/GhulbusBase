@@ -99,7 +99,7 @@ else()
     target_include_directories(gbBase PRIVATE ${PROJECT_SOURCE_DIR}/external/hinnant_date)
     target_link_libraries(gbBase PUBLIC Threads::Threads)
 endif()
-target_compile_definitions(gbBase PUBLIC $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
+target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 target_compile_options(gbBase PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
