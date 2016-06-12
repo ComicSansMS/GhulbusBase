@@ -110,20 +110,37 @@ namespace GHULBUS_BASE_NAMESPACE
         }
 
         /** Thrown by Assert::failThrow in case of a failing exception.
-        */
+         */
         class GHULBUS_BASE_API AssertFailed : public impl::ExceptionImpl
         {
         };
 
         /** Thrown by interfaces that have not yet been implemented.
-        */
+         */
         class GHULBUS_BASE_API NotImplemented : public impl::ExceptionImpl
         {
         };
 
         /** Thrown when an I/O operation fails.
-        */
+         */
         class GHULBUS_BASE_API IOError : public impl::ExceptionImpl
+        {
+        };
+
+        /** Thrown when an invalid argument was passed to a function.
+         * This is used if an argument does not violate a function's precondition but is nonetheless invalid in the
+         * given context. Precondition violations are undefined behavior and may only be signaled using GHULBUS_ASSERT.
+         */
+        class GHULBUS_BASE_API InvalidArgument : public impl::ExceptionImpl
+        {
+        };
+
+        /** Thrown when a function call violates protocol.
+        * This is used if a function call does not violate a function's precondition but is nonetheless invalid in the
+        * given context. Precondition violations are undefined behavior and may only be signaled using GHULBUS_ASSERT.
+        * @note Use this exception with care. Most of the time, a protocol violation is a precondition violation.
+        */
+        class GHULBUS_BASE_API ProtocolViolation : public impl::ExceptionImpl
         {
         };
     }
