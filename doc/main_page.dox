@@ -1,0 +1,43 @@
+/** @mainpage GhulbusBase<br/>
+
+@section sec_Intro Introduction
+
+The GhulbusBase library provides facilities for
+
+ @li \ref sec_Assert "Assertions"
+ @li \ref sec_Exceptions
+ @li \ref sec_Logging
+ @li \ref sec_Utilities
+
+@section sec_Assert Assert
+
+Assertions are diagnostic checks that help diagnose programming errors, but have no observable effect in a well-behaved program. Assertions are unrecoverable, that is, a program that fails an assert check should not continue executing.
+
+Assertions are intended solely as a tool for the developer and can be removed from release builds with a preprocessor switch.
+
+Use them to catch bugs that would otherwise be hard to find with a debugger or lead to undefined behavior:
+
+@code{.cpp}
+#include <gbBase/Assert.hpp>
+
+ // ...
+
+@endcode
+
+@section sec_Exceptions Exceptions
+
+
+
+@section sec_Logging Logging
+
+
+@section sec_Utilities General Purpose Utilities
+
+
+@section sec_license License
+
+\e libstratcom and its documentation are licensed under terms of the <b>MIT License/X11 license</b>.
+
+See the enclosed \c LICENSE.txt file for details. 
+
+*/
