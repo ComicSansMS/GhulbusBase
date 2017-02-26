@@ -36,8 +36,8 @@ Use them to catch bugs that would otherwise be hard to find with a debugger or l
 
 @section sec_license License
 
-\e libstratcom and its documentation are licensed under terms of the <b>MIT License/X11 license</b>.
+\e GhulbusBase and its documentation are licensed under terms of the <b>MIT License/X11 license</b>.
 
-See the enclosed \c LICENSE.txt file for details. 
+See the enclosed \c LICENSE file for details. 
 
 */
