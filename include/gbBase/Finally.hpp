@@ -9,7 +9,6 @@
 
 #include <gbBase/config.hpp>
 
-#include <functional>
 #include <type_traits>
 #include <utility>
 
@@ -29,7 +28,7 @@ public:
 
     Finalizer(Finalizer&& rhs) noexcept : m_finalizer(std::move(rhs.m_finalizer)), m_invoke(rhs.m_invoke) { rhs.m_invoke = false; }
 
-    ~Finalizer() noexcept { if(m_invoke) { std::invoke(m_finalizer); } }
+    ~Finalizer() noexcept { if(m_invoke) { m_finalizer(); } }
 
     Finalizer(Finalizer const&) = delete;
     Finalizer& operator=(Finalizer const&) = delete;
