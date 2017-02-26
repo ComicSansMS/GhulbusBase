@@ -22,11 +22,12 @@ namespace GHULBUS_BASE_NAMESPACE
 template<class F>
 class Finalizer
 {
-    static_assert(std::is_nothrow_move_constructible<F>::value, "Callable type must be nothrow-move-constructible.");
 public:
-    explicit Finalizer(F f) noexcept : m_finalizer(std::move(f)), m_invoke(true) {}
+    explicit Finalizer(F f) noexcept(std::is_nothrow_move_constructible<F>::value)
+        : m_finalizer(std::move(f)), m_invoke(true) {}
 
-    Finalizer(Finalizer&& rhs) noexcept : m_finalizer(std::move(rhs.m_finalizer)), m_invoke(rhs.m_invoke) { rhs.m_invoke = false; }
+    Finalizer(Finalizer&& rhs) noexcept(std::is_nothrow_move_constructible<F>::value)
+        : m_finalizer(std::move(rhs.m_finalizer)), m_invoke(rhs.m_invoke) { rhs.m_invoke = false; }
 
     ~Finalizer() noexcept { if(m_invoke) { m_finalizer(); } }
 
