@@ -46,9 +46,13 @@ private:
  * @param[in] finalizer A Callable object. The returned Finalizer will invoke this upon destruction.
  */
 template<class F>
-inline Finalizer<F> finally(F&& finalizer) noexcept
+inline auto finally(F&& finalizer) noexcept
 {
-    return Finalizer<F>(std::forward<F>(finalizer));
+    using RemRef = typename std::remove_reference<F>::type;
+    using RetParam = typename std::conditional<
+        std::is_lvalue_reference<F>::value && !std::is_function<RemRef>::value,
+        RemRef, F>::type;
+    return Finalizer<RetParam>(std::forward<F>(finalizer));
 }
 }
 
