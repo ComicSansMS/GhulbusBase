@@ -136,10 +136,10 @@ namespace GHULBUS_BASE_NAMESPACE
         };
 
         /** Thrown when a function call violates protocol.
-        * This is used if a function call does not violate a function's precondition but is nonetheless invalid in the
-        * given context. Precondition violations are undefined behavior and may only be signaled using GHULBUS_ASSERT.
-        * @note Use this exception with care. Most of the time, a protocol violation is a precondition violation.
-        */
+         * This is used if a function call does not violate a function's precondition but is nonetheless invalid in the
+         * given context. Precondition violations are undefined behavior and may only be signaled using GHULBUS_ASSERT.
+         * @note Use this exception with care. Most of the time, a protocol violation is a precondition violation.
+         */
         class GHULBUS_BASE_API ProtocolViolation : public impl::ExceptionImpl
         {
         };
