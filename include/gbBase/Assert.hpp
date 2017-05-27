@@ -162,6 +162,8 @@ namespace GHULBUS_BASE_NAMESPACE
 
         /** Assertion Handler signature.
          * Functions of this type can be registered with setAssertionHandler() to be invoked by assertionFailed().
+         * Assertion Handlers must not return to their caller once they have been invoked. If a handler does return,
+         * assertionFailed() will call std::abort() to avoid further undefined behavior.
          */
         typedef void(*Handler)(HandlerParameters const&);
 
@@ -180,7 +182,7 @@ namespace GHULBUS_BASE_NAMESPACE
          * with setAssertionHandler().
          * @param[in] param Description of the failing assertion.
          */
-        GHULBUS_BASE_API void assertionFailed(HandlerParameters const& param);
+        [[noreturn]] GHULBUS_BASE_API void assertionFailed(HandlerParameters const& param);
 
         /** Assertion handler that calls std::abort().
          * This is the default assertion handler. It writes an error message to cerr and calls abort.

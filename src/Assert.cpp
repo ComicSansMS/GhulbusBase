@@ -53,6 +53,7 @@ Handler getAssertionHandler() noexcept
 void assertionFailed(HandlerParameters const& param)
 {
     getAssertionHandler()(param);
+    std::abort();
 }
 
 void failAbort(HandlerParameters const& param)

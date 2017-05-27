@@ -24,6 +24,8 @@ void checkExceptionType(void (*fun)())
     CHECK(was_caught);
 }
 
+struct NoReturn { };
+
 bool g_handlerWasCalled;
 }
 
@@ -50,9 +52,12 @@ TEST_CASE("Assert")
             CHECK(param.condition == std::string("cond"));
             CHECK(param.message == std::string("msg"));
             g_handlerWasCalled = true;
+            throw NoReturn();
         };
         Assert::setAssertionHandler(handler);
-        Assert::assertionFailed(Assert::HandlerParameters{ "file", 42, "func", "cond", "msg" });
+        try {
+            Assert::assertionFailed(Assert::HandlerParameters{ "file", 42, "func", "cond", "msg" });
+        } catch(NoReturn&) {}
         CHECK(g_handlerWasCalled);
     }
 
@@ -91,11 +96,14 @@ TEST_CASE("Assert")
         g_handlerWasCalled = false;
         auto handler = [](Assert::HandlerParameters const&) {
             g_handlerWasCalled = true;
+            throw NoReturn();
         };
         Assert::setAssertionHandler(handler);
         GHULBUS_PRECONDITION_PRD(true);
         CHECK(!g_handlerWasCalled);
-        GHULBUS_PRECONDITION_PRD(false);
+        try {
+            GHULBUS_PRECONDITION_PRD(false);
+        } catch(NoReturn&) {}
         CHECK(g_handlerWasCalled);
     }
 
@@ -104,9 +112,12 @@ TEST_CASE("Assert")
         g_handlerWasCalled = false;
         auto handler = [](Assert::HandlerParameters const&) {
             g_handlerWasCalled = true;
+            throw NoReturn();
         };
         Assert::setAssertionHandler(handler);
-        GHULBUS_UNREACHABLE();
+        try {
+            GHULBUS_UNREACHABLE();
+        } catch(NoReturn&) {}
         CHECK(g_handlerWasCalled);
     }
 
