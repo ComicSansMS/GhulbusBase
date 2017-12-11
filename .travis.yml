@@ -22,9 +22,6 @@ addons:
       - libboost-thread1.60-dev
       - libboost-wave1.60-dev
       - libboost1.60-all-dev
-    sources:
-      - ubuntu-toolchain-r-test
-      - boost-latest
 
 install:
   - gcc-7 --version
