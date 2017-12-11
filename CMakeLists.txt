@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.9)
 
 project(GhulbusBase)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if($ENV{TRAVIS})
@@ -103,6 +103,8 @@ else()
 endif()
 target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
+target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/std:c++latest>)
 target_compile_options(gbBase PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
@@ -137,15 +139,15 @@ if(GB_BUILD_TESTS)
         if(IS_TRAVIS_BUILD)     # on travis, use git for fetching instead of wget
             set(GB_FETCH_EXTERNAL_CATCH
                 GIT_REPOSITORY https://github.com/philsquared/Catch.git
-                GIT_TAG 0c1c9fa9229c7358ce16c9910004a39290b20f5f)
+                GIT_TAG 19ab2117c5bac2f376f8da4a4b25e183137bcec0)
         elseif(WIN32)
             set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip
-                URL_HASH MD5=cda228922a1c9248364c99a3ff9cd9fa)
+                URL https://github.com/catchorg/Catch2/archive/v2.0.1.zip
+                URL_HASH MD5=1abca1b324b99b1631e999119b172620)
         else()
             set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz
-                URL_HASH MD5=a8dfb7be899a6e7fb30bd55d53426122)
+                URL https://github.com/catchorg/Catch2/archive/v2.0.1.tar.gz
+                URL_HASH MD5=2080f4696579351d9323b3b5a8c3c71b)
         endif()
         ExternalProject_Add(Catch-External
             PREFIX ${CMAKE_BINARY_DIR}/external/Catch

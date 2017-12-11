@@ -4,89 +4,75 @@ sudo: false
 
 compiler:
   - gcc
-addons: &clang34
+addons:
   apt:
     packages:
     # compiler
-#      - clang-3.6
-      - g++-5
-      - gcc-5
+      - g++-7
+      - gcc-7
       - ninja-build
     # doc tools
       - doxygen
       - graphviz
-      # mscgen is currently not whitelisted :(
-      #- mscgen
+      - mscgen
     # third-party dependencies
-      - libboost1.55-dev
-      - libboost-date-time1.55-dev
-      - libboost-log1.55-dev
-      - libboost-thread1.55-dev
-      - libboost-wave1.55-dev
-      - libboost1.55-all-dev
+      - libboost1.60-dev
+      - libboost-date-time1.60-dev
+      - libboost-log1.60-dev
+      - libboost-thread1.60-dev
+      - libboost-wave1.60-dev
+      - libboost1.60-all-dev
     sources:
       - ubuntu-toolchain-r-test
-#      - llvm-toolchain-precise-3.6
       - boost-latest
 
 install:
-  - gcc-5 --version
-#  - clang-3.6 --version
-  # install CMake 3.3
+  - gcc-7 --version
+  # install CMake 3.10
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
-  - echo "f3546812c11ce7f5d64dc132a566b749 *cmake-3.3.2-Linux-x86_64.tar.gz" > cmake_md5.txt
-  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz
+  - echo "020740ee9132f55aa529782ee9f578ec *cmake-3.10.0-Linux-x86_64.tar.gz" > cmake_md5.txt
+  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
   - md5sum -c cmake_md5.txt
-  - tar -xvf cmake-3.3.2-Linux-x86_64.tar.gz > /dev/null
-  - mv cmake-3.3.2-Linux-x86_64 cmake-install
+  - tar -xvf cmake-3.10.0-Linux-x86_64.tar.gz > /dev/null
+  - mv cmake-3.10.0-Linux-x86_64 cmake-install
   - PATH=${DEPS_DIR}/cmake-install:${DEPS_DIR}/cmake-install/bin:$PATH
   - which cmake
 
 before_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - mkdir build-static-gcc5 && mkdir build-shared-gcc5 && mkdir build-bare-gcc5 && mkdir build-coverage-gcc5 && mkdir build-static-clang36 && mkdir build-shared-clang36
-  - cd build-static-gcc5
-  - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
+  - mkdir build-static-gcc7 && mkdir build-shared-gcc7 && mkdir build-bare-gcc7 && mkdir build-coverage-gcc7
+  - cd build-static-gcc7
+  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
   - make
-  - cd ../build-shared-gcc5
-  - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+  - cd ../build-shared-gcc7
+  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
   - make
-  - cd ../build-bare-gcc5
-  - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
+  - cd ../build-bare-gcc7
+  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
   - make
-  - cd ../build-coverage-gcc5
-  - cmake -DCMAKE_CXX_COMPILER=g++-5 -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-5 ..
+  - cd ../build-coverage-gcc7
+  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-7 ..
   - make
-#  - cd ../build-static-clang36
-#  - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
-#  - make
-#  - cd ../build-shared-clang36
-#  - cmake -DCMAKE_CXX_COMPILER=clang++-3.6 -DCMAKE_C_COMPILER=clang-3.6 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
-#  - make
   - cd ${TRAVIS_BUILD_DIR}
 
 script:
-  - cd build-static-gcc5
+  - cd build-static-gcc7
   - make test
-  - cd ../build-shared-gcc5
+  - cd ../build-shared-gcc7
   - make test
-  - cd ../build-bare-gcc5
+  - cd ../build-bare-gcc7
   - make test
-  - cd ../build-coverage-gcc5
+  - cd ../build-coverage-gcc7
   - make test
-#  - cd ../build-static-clang36
-#  - make test
-#  - cd ../build-shared-clang36
-#  - make test
 
 after_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - cd build-static-gcc5
+  - cd build-static-gcc7
   - make doxygen-doc
 
 after_success:
-  - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc5
+  - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc7
   - make gbBase_TestCoverage
   - bash <(curl -s https://codecov.io/bash)
 
