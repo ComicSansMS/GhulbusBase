@@ -160,6 +160,7 @@ if(GB_BUILD_TESTS)
         add_library(Catch INTERFACE)
         add_dependencies(Catch Catch-External)
         target_include_directories(Catch INTERFACE ${CMAKE_BINARY_DIR}/external/Catch/include)
+        target_compile_definitions(Catch INTERFACE $<$<CXX_COMPILER_ID:MSVC>:_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING>)
     endif()
 
     add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
