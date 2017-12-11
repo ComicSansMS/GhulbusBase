@@ -2,6 +2,8 @@
 
 #include <catch.hpp>
 
+#include <string>
+
 TEST_CASE("Exception")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
@@ -40,6 +42,7 @@ TEST_CASE("Exception")
                 auto const info = boost::get_error_info<Exception_Info::description>(e);
                 REQUIRE(info);
                 CHECK(*info == testtext);
+                CHECK(std::string(e.what()).find(testtext) != std::string::npos);
             } catch(...) {
             }
             CHECK(was_caught);

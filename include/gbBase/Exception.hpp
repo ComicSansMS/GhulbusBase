@@ -43,7 +43,7 @@ namespace GHULBUS_BASE_NAMESPACE
      */
     class Exception : public virtual std::exception, public virtual boost::exception {
     public:
-        virtual ~Exception() {};
+        virtual ~Exception() = default;
         /** Redeclare std::exception::what() as pure virtual.
          * We do this here so that Exception becomes abstract and to force inheriting classes to give
          * the noexcept guarantee.
