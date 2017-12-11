@@ -8,6 +8,8 @@ compiler:
   - gcc
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
     # compiler
       - g++-7
@@ -24,8 +26,6 @@ addons:
       - libboost-thread1.60-dev
       - libboost-wave1.60-dev
       - libboost1.60-all-dev
-    sources:
-      - ubuntu-toolchain-r-test
 
 install:
   - gcc-7 --version
