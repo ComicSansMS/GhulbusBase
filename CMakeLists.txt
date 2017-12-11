@@ -102,7 +102,6 @@ endif()
 target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
-target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/std:c++latest>)
 target_compile_options(gbBase PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
