@@ -1,7 +1,7 @@
 
 language: cpp
 os: linux
-dist: precise
+dist: trusty
 sudo: false
 
 compiler:
@@ -24,6 +24,8 @@ addons:
       - libboost-thread1.60-dev
       - libboost-wave1.60-dev
       - libboost1.60-all-dev
+    sources:
+      - ubuntu-toolchain-r-test
 
 install:
   - gcc-7 --version
