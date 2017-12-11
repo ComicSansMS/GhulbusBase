@@ -20,12 +20,12 @@ addons:
       - graphviz
       - mscgen
     # third-party dependencies
-      - libboost1.60-dev
-      - libboost-date-time1.60-dev
-      - libboost-log1.60-dev
-      - libboost-thread1.60-dev
-      - libboost-wave1.60-dev
-      - libboost1.60-all-dev
+      - libboost-dev
+      - libboost-date-time-dev
+      - libboost-log-dev
+      - libboost-thread-dev
+      - libboost-wave-dev
+      - libboost-all-dev
 
 install:
   - gcc-7 --version
