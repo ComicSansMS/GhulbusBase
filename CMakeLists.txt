@@ -170,14 +170,17 @@ if(GB_BUILD_TESTS)
     endif()
 
     add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
-    target_link_libraries(gbBase_Test gbBase Catch)
+    target_link_libraries(gbBase_Test PUBLIC gbBase Catch)
     add_test(NAME TestBase COMMAND gbBase_Test)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
-        target_compile_options(gbBase PRIVATE --coverage -fprofile-arcs -ftest-coverage)
-        target_link_libraries(gbBase PRIVATE -fprofile-arcs -ftest-coverage)
+        target_compile_options(gbBase PRIVATE --coverage)
+        target_link_libraries(gbBase PRIVATE --coverage)
+        target_compile_options(gbBase_Test PRIVATE --coverage)
+        target_link_libraries(gbBase_Test PRIVATE --coverage)
         add_custom_target(gbBase_TestCoverage
             COMMAND ${GCOV_COMMAND} -o CMakeFiles/gbBase.dir/src ${GB_BASE_SOURCE_FILES}
+            COMMAND ${GCOV_COMMAND} -o CMakeFiles/gbBase_Test.dir/test ${GB_BASE_TEST_SOURCES}
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             COMMENT "Collecting gcov coverage information"
         )
