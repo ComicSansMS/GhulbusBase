@@ -43,7 +43,7 @@ public:
         }
         std::byte* ret = reinterpret_cast<std::byte*>(ptr);
         m_offset = (ret - m_storage->get()) + n;
-        onAllocate(n, alignment, ret);
+        this->onAllocate(n, alignment, ret);
         return ret;
     }
 
@@ -51,7 +51,7 @@ public:
     {
         GHULBUS_UNUSED_VARIABLE(p);
         GHULBUS_UNUSED_VARIABLE(n);
-        onDeallocate(p, n);
+        this->onDeallocate(p, n);
     }
 
     std::size_t getFreeMemory() const noexcept
@@ -61,7 +61,7 @@ public:
 
     void reset()
     {
-        onReset();
+        this->onReset();
         m_offset = 0;
     }
 };
