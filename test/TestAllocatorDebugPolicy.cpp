@@ -1,4 +1,4 @@
-#include <gbBase/Allocators/DebugPolicy.hpp>
+#include <gbBase/Allocator/DebugPolicy.hpp>
 
 #include <gbBase/Assert.hpp>
 

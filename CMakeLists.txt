@@ -59,7 +59,7 @@ if(NOT GB_BASE_BUILD_BARE)
 endif()
 
 set(GB_BASE_ALLOCATOR_HEADER_FILES
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocators/DebugPolicy.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/DebugPolicy.hpp
 )
 source_group(TREE ${GB_BASE_INCLUDE_DIR}/gbBase FILES ${GB_BASE_ALLOCATOR_HEADER_FILES})
 
