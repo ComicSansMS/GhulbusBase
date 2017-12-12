@@ -43,7 +43,6 @@ TEST_CASE("Exception")
                 REQUIRE(info);
                 CHECK(*info == testtext);
                 CHECK(std::string(e.what()).find(testtext) != std::string::npos);
-            } catch(...) {
             }
             CHECK(was_caught);
         };
