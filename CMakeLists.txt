@@ -61,6 +61,7 @@ endif()
 set(GB_BASE_ALLOCATOR_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/DebugPolicy.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/StatefulAllocator.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/Storage.hpp
 )
 source_group(TREE ${GB_BASE_INCLUDE_DIR}/gbBase FILES ${GB_BASE_ALLOCATOR_HEADER_FILES})
 
@@ -85,6 +86,7 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestFinally.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorDebugPolicy.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorStatefulAllocator.cpp
+    ${GB_BASE_TEST_DIR}/TestAllocatorStorage.cpp
 )
 if(NOT GB_BASE_BUILD_BARE)
     list(APPEND GB_BASE_TEST_SOURCES
