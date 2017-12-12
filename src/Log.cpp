@@ -38,7 +38,7 @@ struct StaticState {
  */
 struct StaticData {
     int staticStorageRefcount;
-    char staticStateStorage[sizeof(StaticState)];
+    std::aligned_storage<sizeof(StaticState), alignof(StaticState)>::type staticStateStorage;
     StaticState* logState;
 } g_staticData;
 
@@ -81,7 +81,7 @@ void initializeLogging()
     GHULBUS_ASSERT(staticData.staticStorageRefcount >= 0);
     if(staticData.staticStorageRefcount == 0)
     {
-        staticData.logState = new(staticData.staticStateStorage) StaticState();
+        staticData.logState = new(&staticData.staticStateStorage) StaticState();
     }
     ++staticData.staticStorageRefcount;
 }
@@ -93,7 +93,8 @@ void shutdownLogging()
     if(staticData.staticStorageRefcount == 1)
     {
          staticData.logState->~StaticState();
-         std::memset(staticData.staticStateStorage, 0, sizeof(staticData.staticStateStorage));
+         std::memset(&staticData.staticStateStorage, 0, sizeof(staticData.staticStateStorage));
+         staticData.logState = nullptr;
     }
     --staticData.staticStorageRefcount;
 }
