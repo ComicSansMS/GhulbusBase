@@ -145,7 +145,8 @@ TEST_CASE("Stateful Allocator")
         CHECK(alloc.allocate(42) == &x);
 
         CHECK(state.number_allocate_calls == 1);
-        CHECK(state.last_allocate_call.n == 42 * sizeof(AlignedType));
+        REQUIRE(sizeof(AlignedType) == 4);
+        CHECK(state.last_allocate_call.n == 42 * 4);
         CHECK(state.last_allocate_call.alignment == 4);
     }
 
