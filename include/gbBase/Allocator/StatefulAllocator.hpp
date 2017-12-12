@@ -8,6 +8,7 @@
 */
 #include <gbBase/config.hpp>
 
+#include <cstddef>
 #include <type_traits>
 
 namespace GHULBUS_BASE_NAMESPACE
