@@ -7,6 +7,7 @@ The GhulbusBase library provides facilities for
  @li \ref sec_Assert "Assertions"
  @li \ref sec_Exceptions
  @li \ref sec_Logging
+ @li \ref sec_Allocators
  @li \ref sec_Utilities
 
 @section sec_Assert Assert
@@ -27,8 +28,10 @@ Use them to catch bugs that would otherwise be hard to find with a debugger or l
 @section sec_Exceptions Exceptions
 
 
-
 @section sec_Logging Logging
+
+
+@section sec_Allocators Custom Memory Allocators
 
 
 @section sec_Utilities General Purpose Utilities
