@@ -30,7 +30,7 @@ namespace AllocationStrategy
  * has not been deallocated yet.
  *
  * The following picture shows the internal state after 4 successful allocations of regions p1 to p4.
- *  - Each allocated block is preceeded by a Header and optionally by a padding region
+ *  - Each allocated block is preceded by a Header and optionally by a padding region
  *    to satisfy alignment requirements.
  *  - Padding is performed such that each pN meets the requested alignment requirement *and*
  *    the preceding header meets the natural alignment requirement for Header.
@@ -39,6 +39,7 @@ namespace AllocationStrategy
  *  - m_topHeader points to the top-most header that has not been deallocated.
  *  - The end of the top-most block marks the start of the free memory.
  *
+ * <pre>
  *                              +---prev_header-------+
  *   +------prev_header---------|----+           +----|-----prev_header----------+
  *   v        <-size-->         v    |   <-size--v    |   <--size->              |   <--size->
@@ -48,6 +49,7 @@ namespace AllocationStrategy
  *   ^        ^                          ^                ^                 ^        ^
  *   |        p1                         p2               p3                |        p4
  * m_storage.get()                                                     m_topHeader
+  </pre>
  *
  * Upon deallocation:
  *  - The header for the corresponding allocation has its size set to 0xffffffffffffffff.
@@ -58,13 +60,16 @@ namespace AllocationStrategy
 template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Stack : private Debug_T {
 public:
+    /** Header used for internal bookkeeping of allocations.
+     * Each block of memory returned by allocate() is preceded by a header.
+     */
     struct Header {
-        Header* previous_header;        // pointer to the previous header in the list
-        std::size_t allocated_size;     // bytesize of the corresponding allocation (excluding header size)
+        Header* previous_header;        ///< Pointer to the previous header in the list.
+        std::size_t allocated_size;     ///< Size of the following memory block in bytes.
     };
 private:
     Storage_T* m_storage;
-    Header* m_topHeader;            //< header of the top-most allocation (beginning of the top-most allocation)
+    Header* m_topHeader;            ///< Header of the top-most allocation.
 public:
     Stack(Storage_T& storage) noexcept
         :m_storage(&storage), m_topHeader(nullptr)

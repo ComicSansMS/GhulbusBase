@@ -32,12 +32,14 @@ namespace AllocationStrategy
  *  - m_offset always indicates the start of the free memory region. Its value keeps growing monotonically unless
  *    explicitly reset to 0 by calling reset().
  *
+ * <pre>
  * +-------------------------------------------------------------------------------------------------------+
  * | Block    | Block            | Padding | Block          | Free memory                                  |
  * +-------------------------------------------------------------------------------------------------------+
  * ^          ^                            ^                ^
  * p1         p2                           p3               |
  * m_storage.get()                             m_storage.get() + m_offset
+ * </pre>
  *
  */
 template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>

@@ -13,5 +13,25 @@
 
 namespace GHULBUS_BASE_NAMESPACE
 {
+/** Custom memory allocators.
+ */
+namespace Allocator
+{
+/** Allocation strategies for use with StatefulAllocator.
+ */
+namespace AllocationStrategy
+{
+}
+/** Debug Policies for use with an AllocationStrategy.
+ */
+namespace DebugPolicy
+{
+}
+/** Storage Policies for use with an AllocationStrategy.
+ */
+namespace Storage
+{
+}
+}
 }
 #endif
