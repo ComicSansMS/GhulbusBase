@@ -18,6 +18,12 @@ namespace Allocator
 {
 namespace Storage
 {
+/** Static storage.
+ * Provides room for `N` bytes of memory with an alignment of `Align`.
+ * The storage lives inside the class, so `sizeof(Static<N>)` increases with growing `N`.
+ * @tparam N Size of the static storage in bytes.
+ * @tparam Align Memory alignment of the storage. Defaults to `alignof(std::max_align_t)`.
+ */
 template<std::size_t N, std::size_t Align = alignof(std::max_align_t)>
 class Static {
 private:
@@ -32,6 +38,9 @@ public:
     }
 };
 
+/** Dynamic storage.
+ * Allocates a storage of a certain size dynamically from the heap (using global `new`).
+ */
 class Dynamic {
 private:
     std::unique_ptr<std::byte[]> m_storage;

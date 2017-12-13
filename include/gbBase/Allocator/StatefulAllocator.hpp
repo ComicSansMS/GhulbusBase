@@ -15,6 +15,12 @@ namespace GHULBUS_BASE_NAMESPACE
 {
 namespace Allocator
 {
+/** Stateful allocator.
+ * This allocator implements the Allocator Concept from the C++ standard and can thus be used
+ * as a custom allocator for STL containers.
+ * @tparam T The type of objects that this allocator will allocate.
+ * @tparam State_T The underlying state. This should be one of the types from AllocationStrategy.
+ */
 template<typename T, typename State_T>
 class StatefulAllocator {
 public:

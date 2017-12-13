@@ -83,8 +83,8 @@ TEST_CASE("Debug Policy Tracking")
     auto records_are_equal = [](PolicyRecord const& lhs, PolicyRecord const& rhs) -> bool {
         return (lhs.pointer   == rhs.pointer)   &&
                (lhs.alignment == rhs.alignment) &&
-               (lhs.n         == rhs.n)         &&
-               (lhs.count     == rhs.count);
+               (lhs.size      == rhs.size)      &&
+               (lhs.id        == rhs.id);
     };
 
     std::byte x, y, z;
@@ -99,8 +99,8 @@ TEST_CASE("Debug Policy Tracking")
         PolicyRecord rec1;
         rec1.pointer = ptr1;
         rec1.alignment = 10;
-        rec1.n = 5;
-        rec1.count = 0;
+        rec1.size = 5;
+        rec1.id = 0;
         expected_records.push_back(rec1);
         auto check_records = pol.getRecords();
         CHECK(std::equal(begin(check_records), end(check_records), begin(expected_records), records_are_equal));
@@ -111,8 +111,8 @@ TEST_CASE("Debug Policy Tracking")
         pol.onAllocate(20, 22, ptr1);
         rec1.pointer = ptr1;
         rec1.alignment = 22;
-        rec1.n = 20;
-        rec1.count = 1;
+        rec1.size = 20;
+        rec1.id = 1;
         expected_records.clear();
         expected_records.push_back(rec1);
         check_records = pol.getRecords();
@@ -121,8 +121,8 @@ TEST_CASE("Debug Policy Tracking")
         pol.onAllocate(7, 87, ptr2);
         rec1.pointer = ptr2;
         rec1.alignment = 87;
-        rec1.n = 7;
-        rec1.count = 2;
+        rec1.size = 7;
+        rec1.id = 2;
         expected_records.push_back(rec1);
         check_records = pol.getRecords();
         CHECK(std::equal(begin(check_records), end(check_records), begin(expected_records), records_are_equal));
@@ -135,8 +135,8 @@ TEST_CASE("Debug Policy Tracking")
         pol.onAllocate(2978, 448, ptr3);
         rec1.pointer = ptr3;
         rec1.alignment = 448;
-        rec1.n = 2978;
-        rec1.count = 3;
+        rec1.size = 2978;
+        rec1.id = 3;
         expected_records.push_back(rec1);
         check_records = pol.getRecords();
         CHECK(std::equal(begin(check_records), end(check_records), begin(expected_records), records_are_equal));
