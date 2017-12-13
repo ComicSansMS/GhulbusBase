@@ -16,8 +16,8 @@ namespace GHULBUS_BASE_NAMESPACE
 namespace Allocator
 {
 /** Stateful allocator.
- * This allocator implements the Allocator Concept from the C++ standard and can thus be used
- * as a custom allocator for STL containers.
+ * This allocator implements the [Allocator Concept](http://en.cppreference.com/w/cpp/concept/Allocator) from
+ * the C++ standard and can thus be used as a custom allocator for STL containers.
  * @tparam T The type of objects that this allocator will allocate.
  * @tparam State_T The underlying state. This should be one of the types from AllocationStrategy.
  */
@@ -26,6 +26,7 @@ class StatefulAllocator {
 public:
     using value_type = T;
 
+    /** This is used for converting construction upon rebind. */
     template<typename, typename>
     friend class StatefulAllocator;
 private:
@@ -45,6 +46,8 @@ public:
         :m_state(rhs.m_state)
     {}
 
+    /** Allocates a storage suitable for n objects of type T.
+     */
     T* allocate(std::size_t n) {
         if constexpr(std::is_same_v<T, void>) {
             return reinterpret_cast<T*>(m_state->allocate(n, 1));
@@ -53,10 +56,16 @@ public:
         }
     }
 
+    /** Deallocates storage pointed to by p.
+     * @pre p must be a value returned by a previous call to allocate()
+     *      that has not yet been deallocated.
+     */
     void deallocate(T* p, std::size_t n) {
         return m_state->deallocate(reinterpret_cast<std::byte*>(p), n);
     }
 
+    /** Retrieve a pointer to the underlying AllocationStrategy.
+     */
     State_T const* getState() const {
         return m_state;
     }
