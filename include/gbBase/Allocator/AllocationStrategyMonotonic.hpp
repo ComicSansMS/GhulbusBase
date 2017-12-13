@@ -1,9 +1,9 @@
-#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_ALLOCATOR_LINEAR_MEMORY_RESOURCE_HPP
-#define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_ALLOCATOR_LINEAR_MEMORY_RESOURCE_HPP
+#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_ALLOCATOR_ALLOCATION_STRATEGY_MONOTONIC_HPP
+#define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_ALLOCATOR_ALLOCATION_STRATEGY_MONOTONIC_HPP
 
 /** @file
 *
-* @brief Linear memory resource.
+* @brief Monotonic allocation strategy.
 * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
 */
 #include <gbBase/config.hpp>
@@ -19,13 +19,15 @@ namespace GHULBUS_BASE_NAMESPACE
 {
 namespace Allocator
 {
+namespace AllocationStrategy
+{
 template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
-class LinearMemoryResource : private Debug_T {
+class Monotonic : private Debug_T {
 private:
     Storage_T* m_storage;
     std::size_t m_offset;
 public:
-    LinearMemoryResource(Storage_T& storage) noexcept
+    Monotonic(Storage_T& storage) noexcept
         :m_storage(&storage), m_offset(0)
     {}
 
@@ -65,6 +67,7 @@ public:
         m_offset = 0;
     }
 };
+}
 }
 }
 #endif

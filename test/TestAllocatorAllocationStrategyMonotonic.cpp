@@ -1,4 +1,4 @@
-#include <gbBase/Allocator/LinearMemoryResource.hpp>
+#include <gbBase/Allocator/AllocationStrategyMonotonic.hpp>
 
 #include <catch.hpp>
 
@@ -31,13 +31,13 @@ std::size_t MockDebugPolicy::number_on_deallocate_calls;
 std::size_t MockDebugPolicy::number_on_reset_calls;
 }
 
-TEST_CASE("Linear Memory Resource")
+TEST_CASE("Monotonic Allocation Strategy")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
 
     MockStorage storage;
 
-    Allocator::LinearMemoryResource<MockStorage, MockDebugPolicy> lmr(storage);
+    Allocator::AllocationStrategy::Monotonic<MockStorage, MockDebugPolicy> lmr(storage);
     MockDebugPolicy::number_on_allocate_calls = 0;
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;

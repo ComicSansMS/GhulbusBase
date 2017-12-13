@@ -8,7 +8,7 @@
 */
 #include <gbBase/config.hpp>
 
-#include <gbBase/Allocator/LinearMemoryResource.hpp>
+#include <gbBase/Allocator/AllocationStrategyMonotonic.hpp>
 #include <gbBase/Allocator/StatefulAllocator.hpp>
 
 namespace GHULBUS_BASE_NAMESPACE
