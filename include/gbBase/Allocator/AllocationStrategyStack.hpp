@@ -12,6 +12,7 @@
 #include <gbBase/Allocator/Storage.hpp>
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <new>
 

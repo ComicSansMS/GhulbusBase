@@ -94,7 +94,7 @@ TEST_CASE("Monotonic Allocation Strategy")
         CHECK(MockDebugPolicy::number_on_allocate_calls == 3);
     }
 
-    SECTION("Allocate of of aligned memory")
+    SECTION("Allocate out of aligned memory")
     {
         std::aligned_storage_t<8> as;
         storage.memory_size = 8;
