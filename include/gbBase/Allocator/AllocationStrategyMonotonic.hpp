@@ -21,6 +21,25 @@ namespace Allocator
 {
 namespace AllocationStrategy
 {
+/** Monotonic allocation strategy.
+ * The monotonic allocator keeps giving out blocks of memory from a region, but never reclaims any memory.
+ * If a user has ensured that all previous allocations have been deallocated, they can reclaim the entire
+ * memory region by calling reset().
+ *
+ * The internal state of the monotonic allocator consists of a counter that indicates the offset to
+ * the free memory region. Consider the following example showing the state after 3 allocations of regions p1 to p3.
+ *  - Unused padding blocks may be inserted to satisfy alignment requirements of an allocation.
+ *  - m_offset always indicates the start of the free memory region. Its value keeps growing monotonically unless
+ *    explicitly reset to 0 by calling reset().
+ *
+ * +-------------------------------------------------------------------------------------------------------+
+ * | Block    | Block            | Padding | Block          | Free memory                                  |
+ * +-------------------------------------------------------------------------------------------------------+
+ * ^          ^                            ^                ^
+ * p1         p2                           p3               |
+ * m_storage.get()                             m_storage.get() + m_offset
+ *
+ */
 template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Monotonic : private Debug_T {
 private:
@@ -56,11 +75,16 @@ public:
         this->onDeallocate(p, n);
     }
 
+    /** Returns the size of the free memory region in bytes.
+     */
     std::size_t getFreeMemory() const noexcept
     {
         return m_storage->size() - m_offset;
     }
 
+    /** Explicitly resets the allocator, discarding all previously allocated blocks.
+     * This function must only be called after all previously allocated blocks have been deallocated.
+     */
     void reset()
     {
         this->onReset();
