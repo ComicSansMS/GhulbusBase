@@ -37,10 +37,16 @@ namespace AllocationStrategy
  *    to satisfy alignment requirements.
  *  - Padding is performed such that each pN meets the requested alignment requirement *and*
  *    the preceding header meets the natural alignment requirement for Header.
- *  - Each header contains a pointer to the start of the previous header and the size of
- *    the following block in bytes.
+ *  - Each header contains a pointer to the start of the previous header and a flag indicating
+ *    whether the corresponding block was deallocated.
  *  - m_topHeader points to the top-most header that has not been deallocated.
- *  - The end of the top-most block marks the start of the free memory.
+ *  - The start of the free memory is pointed to by m_freeMemoryOffset.
+ *  - Note that since headers do not track the size of their blocks, deallocation can only move
+ *    the free memory offset back to the start of the header of the deallocated block, leaving the
+ *    padding bytes in the unavailable memory region. If the next allocation now has a weaker alignment
+ *    requirement, those bytes will be effectively lost. It would be possible to use a few additional
+ *    bits in the header to store the alignment of the block, but this was not deemed worth the
+ *    resulting runtime overhead.
  *
  * <pre>
  *                              +---prev_header-------+
@@ -58,6 +64,7 @@ namespace AllocationStrategy
  *  - The header for the corresponding allocation has its size set to 0xffffffffffffffff.
  *  - The m_topHeader will be moved to the left along the list of previous headers until
  *    it no longer points to a header with a size of 0xffffffffffffffff.
+ *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered.
  *
  */
 template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>

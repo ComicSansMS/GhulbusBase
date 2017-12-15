@@ -235,4 +235,39 @@ TEST_CASE("Stack Allocation Strategy")
         stack.deallocate(p1, 8);
         CHECK(stack.getFreeMemory() == storage.memory_size);
     }
+
+    SECTION("Memory lost after deallocation due to alignment")
+    {
+        std::aligned_storage_t<64, 16> as;
+        auto ptr = reinterpret_cast<std::byte*>(&as);
+        storage.memory_ptr = ptr;
+        storage.memory_size = 64;
+
+        CHECK(stack.getFreeMemory() == 64);
+        std::byte* const p1 = stack.allocate(24, 8);
+        CHECK(stack.getFreeMemory() == 64 - 24 - sizeof(Header));
+
+        // with no padding, memory is fully reclaimed
+        std::byte* const p2 = stack.allocate(12, 8);
+        CHECK(stack.getFreeMemory() == 64 - 36 - 2*sizeof(Header));
+        stack.deallocate(p2, 12);
+        CHECK(stack.getFreeMemory() == 64 - 24 - sizeof(Header));
+
+        // with padding, padding memory is 'lost' after deallocation
+        std::byte* const p3 = stack.allocate(12, 16);
+        std::size_t const lost_in_padding = 8;
+        CHECK(p3 - p2 == lost_in_padding);
+        CHECK(stack.getFreeMemory() == 64 - 36 - 2*sizeof(Header) - lost_in_padding);
+        stack.deallocate(p3, 12);
+        CHECK(stack.getFreeMemory() == 64 - 24 - sizeof(Header) - lost_in_padding);
+
+        // allocating again with a weaker alignment still gets us the stronger padding
+        std::byte* const p4 = stack.allocate(12, 8);
+        CHECK(p4 - p2 == lost_in_padding);
+
+        // padding is reclaimed as soon the next lower block is cleared as well
+        stack.deallocate(p4, 12);
+        stack.deallocate(p1, 24);
+        CHECK(stack.getFreeMemory() == 64);
+    }
 }
