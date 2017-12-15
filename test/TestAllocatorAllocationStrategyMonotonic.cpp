@@ -1,43 +1,20 @@
 #include <gbBase/Allocator/AllocationStrategyMonotonic.hpp>
 
+#include <MockDebugPolicy.hpp>
+#include <MockStorage.hpp>
+
 #include <catch.hpp>
-
-namespace {
-struct MockStorage {
-    std::byte* memory_ptr = nullptr;
-    std::size_t memory_size = 0;
-
-    std::byte* get() noexcept {
-        return memory_ptr;
-    }
-
-    std::size_t size() const noexcept {
-        return memory_size;
-    }
-};
-
-struct MockDebugPolicy {
-    static std::size_t number_on_allocate_calls;
-    static std::size_t number_on_deallocate_calls;
-    static std::size_t number_on_reset_calls;
-
-    void onAllocate(std::size_t, std::size_t, std::byte*) { ++number_on_allocate_calls; }
-    void onDeallocate(std::byte*, std::size_t) { ++number_on_deallocate_calls; }
-    void onReset() { ++number_on_reset_calls; }
-};
-
-std::size_t MockDebugPolicy::number_on_allocate_calls;
-std::size_t MockDebugPolicy::number_on_deallocate_calls;
-std::size_t MockDebugPolicy::number_on_reset_calls;
-}
 
 TEST_CASE("Monotonic Allocation Strategy")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
 
+    using testing::MockStorage;
+    using testing::MockDebugPolicy;
+
     MockStorage storage;
 
-    Allocator::AllocationStrategy::Monotonic<MockStorage, MockDebugPolicy> lmr(storage);
+    Allocator::AllocationStrategy::Monotonic<MockStorage, MockDebugPolicy> monot(storage);
     MockDebugPolicy::number_on_allocate_calls = 0;
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;
@@ -46,7 +23,7 @@ TEST_CASE("Monotonic Allocation Strategy")
     {
         storage.memory_size = 42;
 
-        CHECK(lmr.getFreeMemory() == 42);
+        CHECK(monot.getFreeMemory() == 42);
     }
 
     SECTION("Allocate")
@@ -56,11 +33,11 @@ TEST_CASE("Monotonic Allocation Strategy")
         storage.memory_ptr = &x;
 
         CHECK(MockDebugPolicy::number_on_allocate_calls == 0);
-        CHECK(lmr.allocate(1, 1) == &x);
-        CHECK(lmr.getFreeMemory() == 41);
+        CHECK(monot.allocate(1, 1) == &x);
+        CHECK(monot.getFreeMemory() == 41);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
-        CHECK(lmr.allocate(1, 1) == &x + 1);
-        CHECK(lmr.getFreeMemory() == 40);
+        CHECK(monot.allocate(1, 1) == &x + 1);
+        CHECK(monot.getFreeMemory() == 40);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
     }
 
@@ -70,13 +47,13 @@ TEST_CASE("Monotonic Allocation Strategy")
         storage.memory_size = 4;
         storage.memory_ptr = &x;
 
-        CHECK(lmr.allocate(1, 1) == &x);
+        CHECK(monot.allocate(1, 1) == &x);
 
         CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
-        CHECK(lmr.getFreeMemory() == 3);
-        CHECK_THROWS_AS(lmr.allocate(4, 1), std::bad_alloc);
+        CHECK(monot.getFreeMemory() == 3);
+        CHECK_THROWS_AS(monot.allocate(4, 1), std::bad_alloc);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
-        CHECK(lmr.getFreeMemory() == 3);
+        CHECK(monot.getFreeMemory() == 3);
     }
 
     SECTION("Allocate aligned")
@@ -85,12 +62,12 @@ TEST_CASE("Monotonic Allocation Strategy")
         storage.memory_size = 64;
         storage.memory_ptr = reinterpret_cast<std::byte*>(&as);
 
-        CHECK(lmr.allocate(1, 1) == reinterpret_cast<std::byte*>(&as));
-        CHECK(lmr.allocate(1, 4) == reinterpret_cast<std::byte*>(&as) + 4);
-        CHECK(lmr.getFreeMemory() == 59);
+        CHECK(monot.allocate(1, 1) == reinterpret_cast<std::byte*>(&as));
+        CHECK(monot.allocate(1, 4) == reinterpret_cast<std::byte*>(&as) + 4);
+        CHECK(monot.getFreeMemory() == 59);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
-        CHECK(lmr.allocate(4, 4) == reinterpret_cast<std::byte*>(&as) + 8);
-        CHECK(lmr.getFreeMemory() == 52);
+        CHECK(monot.allocate(4, 4) == reinterpret_cast<std::byte*>(&as) + 8);
+        CHECK(monot.getFreeMemory() == 52);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 3);
     }
 
@@ -100,15 +77,15 @@ TEST_CASE("Monotonic Allocation Strategy")
         storage.memory_size = 8;
         storage.memory_ptr = reinterpret_cast<std::byte*>(&as);
 
-        CHECK(lmr.allocate(5, 1) == reinterpret_cast<std::byte*>(&as));
-        CHECK_THROWS_AS(lmr.allocate(1, 4), std::bad_alloc);
+        CHECK(monot.allocate(5, 1) == reinterpret_cast<std::byte*>(&as));
+        CHECK_THROWS_AS(monot.allocate(1, 4), std::bad_alloc);
     }
 
     SECTION("Deallocate")
     {
         std::byte x;
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
-        lmr.deallocate(&x, 42);
+        monot.deallocate(&x, 42);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
     }
 
@@ -118,15 +95,15 @@ TEST_CASE("Monotonic Allocation Strategy")
         storage.memory_size = 42;
         storage.memory_ptr = &x;
 
-        CHECK(lmr.allocate(1, 1) == &x);
-        CHECK(lmr.getFreeMemory() == 41);
+        CHECK(monot.allocate(1, 1) == &x);
+        CHECK(monot.getFreeMemory() == 41);
 
         CHECK(MockDebugPolicy::number_on_reset_calls == 0);
-        lmr.reset();
+        monot.reset();
         CHECK(MockDebugPolicy::number_on_reset_calls == 1);
 
-        CHECK(lmr.getFreeMemory() == 42);
+        CHECK(monot.getFreeMemory() == 42);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
-        CHECK(lmr.allocate(1, 1) == &x);
+        CHECK(monot.allocate(1, 1) == &x);
     }
 }

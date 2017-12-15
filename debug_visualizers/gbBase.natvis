@@ -1,10 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;Ghulbus::testing::MockStorage, *&gt;">
+    <DisplayString>{{ available: {m_storage->memory_size - m_offset}/{m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
+  </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;Ghulbus::Allocator::Storage::Dynamic, *&gt;">
+    <DisplayString>{{ available: {m_storage->m_size - m_offset}/{m_storage->m_size}, dynamic memory }}</DisplayString>
+  </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;Ghulbus::Allocator::Storage::Static&lt;*&gt;, *&gt;">
+    <DisplayString>{{ available: {$T1 - m_offset}/{$T1}, static memory }}</DisplayString>
+  </Type>
+
   <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;*&gt;::Header">
     <DisplayString>{{ previous={(Header*)(m_data &amp; ~(uintptr_t(0x01)))}, wasFreed={((m_data &amp; 0x01) != 0)} }}</DisplayString>
     <Expand>
       <Item Name="previousHeader">(Header*)(m_data &amp; ~(uintptr_t(0x01)))</Item>
       <Item Name="wasFreed">((m_data &amp; 0x01) != 0)</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;Ghulbus::testing::MockStorage, *&gt;">
+    <DisplayString>{{ available: {m_storage->memory_size - m_freeMemoryOffset}/{m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
+    <Expand>
+      <Item Name="storage">m_storage->memory_ptr</Item>
+      <Item Name="total">m_storage->memory_size</Item>
+      <Item Name="free">m_storage->memory_size - m_freeMemoryOffset</Item>
+      <Synthetic Name="allocations">
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>m_topHeader</HeadPointer>
+            <NextPointer>(Header*)(m_data &amp; ~(uintptr_t(0x01)))</NextPointer>
+            <ValueNode Name="free: {((m_data &amp; 0x01) != 0)}">((std::byte*)this + 1)</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;Ghulbus::Allocator::Storage::Dynamic, *&gt;">
+    <DisplayString>{{ available: {m_storage->m_size - m_freeMemoryOffset}/{m_storage->m_size}, dynamic memory }}</DisplayString>
+    <Expand>
+      <Item Name="storage">m_storage->m_storage</Item>
+      <Item Name="total">m_storage->m_size</Item>
+      <Item Name="free">m_storage->m_size - m_freeMemoryOffset</Item>
+      <Synthetic Name="allocations">
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>m_topHeader</HeadPointer>
+            <NextPointer>(Header*)(m_data &amp; ~(uintptr_t(0x01)))</NextPointer>
+            <ValueNode Name="free: {((m_data &amp; 0x01) != 0)}">((std::byte*)this + 1)</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;Ghulbus::Allocator::Storage::Static&lt;*&gt;, *&gt;">
+    <DisplayString>{{ available: {$T1 - m_freeMemoryOffset}/{$T1}, static memory }}</DisplayString>
+    <Expand>
+      <Item Name="storage">m_storage</Item>
+      <Item Name="total">$T1</Item>
+      <Item Name="free">$T1 - m_freeMemoryOffset</Item>
+      <Synthetic Name="allocations">
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>m_topHeader</HeadPointer>
+            <NextPointer>(Header*)(m_data &amp; ~(uintptr_t(0x01)))</NextPointer>
+            <ValueNode Name="free: {((m_data &amp; 0x01) != 0)}">((std::byte*)this + 1)</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
     </Expand>
   </Type>
 </AutoVisualizer>

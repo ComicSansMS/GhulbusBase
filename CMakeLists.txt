@@ -93,6 +93,8 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestAllocatorDebugPolicy.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorStatefulAllocator.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorStorage.cpp
+    ${GB_BASE_TEST_DIR}/MockDebugPolicy.hpp
+    ${GB_BASE_TEST_DIR}/MockStorage.hpp
 )
 if(NOT GB_BASE_BUILD_BARE)
     list(APPEND GB_BASE_TEST_SOURCES
@@ -181,6 +183,7 @@ if(GB_BUILD_TESTS)
 
     add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
     target_link_libraries(gbBase_Test PUBLIC gbBase Catch)
+    target_include_directories(gbBase_Test PUBLIC ${GB_BASE_TEST_DIR})
     add_test(NAME TestBase COMMAND gbBase_Test)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
