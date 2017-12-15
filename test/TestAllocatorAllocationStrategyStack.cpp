@@ -45,8 +45,6 @@ TEST_CASE("Stack Allocation Strategy")
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;
 
-    std::size_t const free_marker = std::numeric_limits<std::size_t>::max();
-
     SECTION("Size and offset")
     {
         storage.memory_size = 42;
@@ -65,8 +63,8 @@ TEST_CASE("Stack Allocation Strategy")
         std::byte* const p1 = stack.allocate(1, 1);
         Header const* const h1 = reinterpret_cast<Header const*>(p1 - sizeof(Header));
         CHECK(p1 == ptr + sizeof(Header));
-        CHECK(h1->previous_header == nullptr);
-        CHECK(h1->allocated_size == 1);
+        CHECK(h1->previousHeader() == nullptr);
+        CHECK(!h1->wasFreed());
         CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
         CHECK(stack.getFreeMemory() == 256 - sizeof(Header) - 1);
         CHECK(stack.getFreeMemoryOffset() == sizeof(Header) + 1);
@@ -75,8 +73,8 @@ TEST_CASE("Stack Allocation Strategy")
         Header const* const h2 = reinterpret_cast<Header const*>(p2 - sizeof(Header));
         CHECK(p2 == ptr + 2*sizeof(Header) + 1                      + (alignof(Header) - 1));
         //          ^base   ^2 headers       ^previous allocation      ^padding to second header
-        CHECK(h2->previous_header == h1);
-        CHECK(h2->allocated_size == 3);
+        CHECK(h2->previousHeader() == h1);
+        CHECK(!h2->wasFreed());
         CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
         CHECK(stack.getFreeMemory() == 256 - 2*sizeof(Header) - alignof(Header) - 3);
         CHECK(stack.getFreeMemoryOffset() == 2*sizeof(Header) + alignof(Header) + 3);
@@ -111,15 +109,15 @@ TEST_CASE("Stack Allocation Strategy")
         std::byte* const p1 = stack.allocate(24, 16);
         Header const* const h1 = reinterpret_cast<Header const*>(p1 - sizeof(Header));
         CHECK(p1 == ptr + 16);
-        CHECK(h1->allocated_size == 24);
-        CHECK(h1->previous_header == nullptr);
+        CHECK(!h1->wasFreed());
+        CHECK(h1->previousHeader() == nullptr);
 
         std::byte* const p2 = stack.allocate(4, 16);
         Header const* const h2 = reinterpret_cast<Header const*>(p2 - sizeof(Header));
         CHECK(p2 == p1 + 24      + 8       + sizeof(Header));
         //               ^p1 size  ^ padding  ^p2 header
-        CHECK(h2->allocated_size == 4);
-        CHECK(h2->previous_header == h1);
+        CHECK(!h2->wasFreed());
+        CHECK(h2->previousHeader() == h1);
     }
 
     SECTION("Allocate out of aligned memory")
@@ -154,28 +152,28 @@ TEST_CASE("Stack Allocation Strategy")
 
         CHECK(stack.getFreeMemory() == storage.memory_size - (4*sizeof(Header) + 64));
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
-        CHECK(h4->allocated_size == 32);
+        CHECK(!h4->wasFreed());
         stack.deallocate(p4, 32);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
-        CHECK(h4->allocated_size == free_marker);
+        CHECK(h4->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size - (3*sizeof(Header) + 32));
 
-        CHECK(h3->allocated_size == 8);
+        CHECK(!h3->wasFreed());
         stack.deallocate(p3, 8);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 2);
-        CHECK(h3->allocated_size == free_marker);
+        CHECK(h3->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size - (2*sizeof(Header) + 24));
 
-        CHECK(h2->allocated_size == 16);
+        CHECK(!h2->wasFreed());
         stack.deallocate(p2, 16);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 3);
-        CHECK(h2->allocated_size == free_marker);
+        CHECK(h2->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size - (sizeof(Header) + 8));
 
-        CHECK(h1->allocated_size == 8);
+        CHECK(!h1->wasFreed());
         stack.deallocate(p1, 8);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 4);
-        CHECK(h1->allocated_size == free_marker);
+        CHECK(h1->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size);
     }
 
@@ -197,22 +195,22 @@ TEST_CASE("Stack Allocation Strategy")
 
         CHECK(stack.getFreeMemory() == storage.memory_size - (4*sizeof(Header) + 64));
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
-        CHECK(h2->allocated_size == 16);
+        CHECK(!h2->wasFreed());
         stack.deallocate(p2, 16);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
-        CHECK(h2->allocated_size == free_marker);
+        CHECK(h2->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size - (4*sizeof(Header) + 64));
 
-        CHECK(h3->allocated_size == 8);
+        CHECK(!h3->wasFreed());
         stack.deallocate(p3, 8);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 2);
-        CHECK(h3->allocated_size == free_marker);
+        CHECK(h3->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size - (4*sizeof(Header) + 64));
 
-        CHECK(h4->allocated_size == 32);
+        CHECK(!h4->wasFreed());
         stack.deallocate(p4, 32);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 3);
-        CHECK(h4->allocated_size == free_marker);
+        CHECK(h4->wasFreed());
         CHECK(stack.getFreeMemory() == storage.memory_size - (sizeof(Header) + 8));
 
         stack.deallocate(p1, 8);

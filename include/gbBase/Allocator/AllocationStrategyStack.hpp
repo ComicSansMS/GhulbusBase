@@ -65,15 +65,40 @@ public:
      * Each block of memory returned by allocate() is preceded by a header.
      */
     struct Header {
-        Header* previous_header;        ///< Pointer to the previous header in the list.
-        std::size_t allocated_size;     ///< Size of the following memory block in bytes.
+        Header* m_previousHeader;        ///< Pointer to the previous header in the list.
+        std::size_t m_allocatedSize;     ///< Size of the following memory block in bytes.
+
+        Header(Header* previous_header, std::size_t allocated_size)
+            :m_previousHeader(previous_header), m_allocatedSize(allocated_size)
+        {}
+
+        Header* previousHeader() const
+        {
+            return m_previousHeader;
+        }
+
+        void markFree()
+        {
+            m_allocatedSize = std::numeric_limits<std::size_t>::max();
+        }
+
+        std::size_t getAllocatedSize() const
+        {
+            return m_allocatedSize;
+        }
+
+        bool wasFreed() const
+        {
+            return m_allocatedSize == std::numeric_limits<std::size_t>::max();
+        }
     };
 private:
     Storage_T* m_storage;
     Header* m_topHeader;            ///< Header of the top-most allocation.
+    std::size_t m_freeMemoryOffset;
 public:
     Stack(Storage_T& storage) noexcept
-        :m_storage(&storage), m_topHeader(nullptr)
+        :m_storage(&storage), m_topHeader(nullptr), m_freeMemoryOffset(0)
     {}
 
     std::byte* allocate(std::size_t n, std::size_t alignment)
@@ -90,10 +115,9 @@ public:
         std::byte* ret = reinterpret_cast<std::byte*>(ptr);
 
         // setup a header in the memory region immediately preceding ret
-        Header* new_header = reinterpret_cast<Header*>(ret - sizeof(Header));
-        new_header->previous_header = m_topHeader;
-        new_header->allocated_size = n;
+        Header* new_header = new (ret - sizeof(Header)) Header(m_topHeader, n);
         m_topHeader = new_header;
+        m_freeMemoryOffset = (ret - m_storage->get()) + n;
 
         this->onAllocate(n, alignment, ret);
         return ret;
@@ -104,14 +128,15 @@ public:
         this->onDeallocate(p, n);
 
         // mark the deallocated block as freed in the header
-        constexpr std::size_t const was_freed = std::numeric_limits<std::size_t>::max();
         Header* header_start = reinterpret_cast<Header*>(p - sizeof(Header));
-        header_start->allocated_size = was_freed;
+        header_start->markFree();
 
         // advance the top header to the lest until it no longer points to a freed header
-        while(m_topHeader && (m_topHeader->allocated_size == was_freed)) {
+        while(m_topHeader && (m_topHeader->wasFreed())) {
             header_start = m_topHeader;
-            m_topHeader = header_start->previous_header;
+            m_topHeader = header_start->previousHeader();
+            m_freeMemoryOffset = (reinterpret_cast<std::byte*>(header_start) - m_storage->get());
+            header_start->~Header();
         }
     }
 
@@ -119,9 +144,10 @@ public:
      */
     std::size_t getFreeMemoryOffset() const noexcept
     {
-        auto top_hdr = reinterpret_cast<std::byte*>(m_topHeader);
-        return (m_topHeader == nullptr) ? 0 :
-               ((top_hdr - m_storage->get()) + sizeof(Header) + m_topHeader->allocated_size);
+        //auto top_hdr = reinterpret_cast<std::byte*>(m_topHeader);
+        //return (m_topHeader == nullptr) ? 0 :
+        //       ((top_hdr - m_storage->get()) + sizeof(Header) + m_topHeader->getAllocatedSize());
+        return m_freeMemoryOffset;
     }
 
     /** Returns the size of the free memory region in bytes.
