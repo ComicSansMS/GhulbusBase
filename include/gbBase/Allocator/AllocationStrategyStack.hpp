@@ -12,6 +12,8 @@
 #include <gbBase/Allocator/Storage.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <new>
@@ -47,9 +49,9 @@ namespace AllocationStrategy
  *   +--------+-------+---------+--------+-------+--------+-------+---------+--------+-------+-------------+
  *   | Header | Block | Padding | Header | Block | Header | Block | Padding | Header | Block | Free Memory |
  *   +--------+-------+---------+--------+-------+--------+-------+---------+--------+-------+-------------+
- *   ^        ^                          ^                ^                 ^        ^
- *   |        p1                         p2               p3                |        p4
- * m_storage.get()                                                     m_topHeader
+ *   ^        ^                          ^                ^                 ^        ^       ^
+ *   |        p1                         p2               p3                |        p4      |
+ * m_storage.get()                                                     m_topHeader       m_freeMemoryOffset
   </pre>
  *
  * Upon deallocation:
@@ -64,32 +66,40 @@ public:
     /** Header used for internal bookkeeping of allocations.
      * Each block of memory returned by allocate() is preceded by a header.
      */
-    struct Header {
-        Header* m_previousHeader;        ///< Pointer to the previous header in the list.
-        std::size_t m_allocatedSize;     ///< Size of the following memory block in bytes.
-
-        Header(Header* previous_header, std::size_t allocated_size)
-            :m_previousHeader(previous_header), m_allocatedSize(allocated_size)
-        {}
+    class Header {
+    private:
+        /** Packed data field.
+         * The Header needs to store two pieces of information: A pointer to the previous header and a flag
+         * indicating whether the header was freed. As a space optimization, the flag is packed into the
+         * least significant bit of the pointer, as that one is always 0 due to the Header' own alignment
+         * requirements.
+         */
+        std::uintptr_t m_data;
+    public:
+        Header(Header* previous_header)
+        {
+            static_assert(sizeof(Header*) == sizeof(std::uintptr_t));
+            static_assert(alignof(Header) >= 2);
+            std::memcpy(&m_data, &previous_header, sizeof(std::intptr_t));
+        }
 
         Header* previousHeader() const
         {
-            return m_previousHeader;
+            std::uintptr_t tmp;
+            tmp = m_data & ~(std::uintptr_t(0x01));
+            Header* ret;
+            std::memcpy(&ret, &tmp, sizeof(std::uintptr_t));
+            return ret;
         }
 
         void markFree()
         {
-            m_allocatedSize = std::numeric_limits<std::size_t>::max();
-        }
-
-        std::size_t getAllocatedSize() const
-        {
-            return m_allocatedSize;
+            m_data |= 0x01;
         }
 
         bool wasFreed() const
         {
-            return m_allocatedSize == std::numeric_limits<std::size_t>::max();
+            return ((m_data & 0x01) != 0);
         }
     };
 private:
@@ -115,7 +125,7 @@ public:
         std::byte* ret = reinterpret_cast<std::byte*>(ptr);
 
         // setup a header in the memory region immediately preceding ret
-        Header* new_header = new (ret - sizeof(Header)) Header(m_topHeader, n);
+        Header* new_header = new (ret - sizeof(Header)) Header(m_topHeader);
         m_topHeader = new_header;
         m_freeMemoryOffset = (ret - m_storage->get()) + n;
 
@@ -144,9 +154,6 @@ public:
      */
     std::size_t getFreeMemoryOffset() const noexcept
     {
-        //auto top_hdr = reinterpret_cast<std::byte*>(m_topHeader);
-        //return (m_topHeader == nullptr) ? 0 :
-        //       ((top_hdr - m_storage->get()) + sizeof(Header) + m_topHeader->getAllocatedSize());
         return m_freeMemoryOffset;
     }
 

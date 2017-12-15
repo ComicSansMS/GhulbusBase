@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;*&gt;::Header">
+    <DisplayString>{{ previous={(Header*)(m_data &amp; ~(uintptr_t(0x01)))}, wasFreed={((m_data &amp; 0x01) != 0)} }}</DisplayString>
+    <Expand>
+      <Item Name="previousHeader">(Header*)(m_data &amp; ~(uintptr_t(0x01)))</Item>
+      <Item Name="wasFreed">((m_data &amp; 0x01) != 0)</Item>
+    </Expand>
+  </Type>
+</AutoVisualizer>

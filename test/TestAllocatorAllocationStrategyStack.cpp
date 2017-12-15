@@ -45,6 +45,25 @@ TEST_CASE("Stack Allocation Strategy")
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;
 
+    SECTION("Allocator Header")
+    {
+        Header h1(nullptr);
+        CHECK(h1.previousHeader() == nullptr);
+        CHECK(!h1.wasFreed());
+        Header h2(&h1);
+        CHECK(h2.previousHeader() == &h1);
+        CHECK(!h2.wasFreed());
+
+        CHECK(!h1.wasFreed());
+        h1.markFree();
+        CHECK(h1.previousHeader() == nullptr);
+        CHECK(h2.previousHeader()->wasFreed());
+        CHECK(!h2.wasFreed());
+        h2.markFree();
+        CHECK(h2.wasFreed());
+        CHECK(h2.previousHeader() == &h1);
+    }
+
     SECTION("Size and offset")
     {
         storage.memory_size = 42;
@@ -106,7 +125,7 @@ TEST_CASE("Stack Allocation Strategy")
         storage.memory_ptr = ptr;
         storage.memory_size = 256;
 
-        std::byte* const p1 = stack.allocate(24, 16);
+        std::byte* const p1 = stack.allocate(20, 16);
         Header const* const h1 = reinterpret_cast<Header const*>(p1 - sizeof(Header));
         CHECK(p1 == ptr + 16);
         CHECK(!h1->wasFreed());
@@ -114,7 +133,7 @@ TEST_CASE("Stack Allocation Strategy")
 
         std::byte* const p2 = stack.allocate(4, 16);
         Header const* const h2 = reinterpret_cast<Header const*>(p2 - sizeof(Header));
-        CHECK(p2 == p1 + 24      + 8       + sizeof(Header));
+        CHECK(p2 == p1 + 20      + 4       + sizeof(Header));
         //               ^p1 size  ^ padding  ^p2 header
         CHECK(!h2->wasFreed());
         CHECK(h2->previousHeader() == h1);
@@ -129,9 +148,9 @@ TEST_CASE("Stack Allocation Strategy")
 
         std::byte* const p1 = stack.allocate(20, 16);
         CHECK(p1 == ptr + 16);
-        CHECK(stack.getFreeMemory() == 12 + sizeof(Header));
+        CHECK(stack.getFreeMemory() == 20 + sizeof(Header));
 
-        CHECK_THROWS_AS(stack.allocate(12, 16), std::bad_alloc);
+        CHECK_THROWS_AS(stack.allocate(20, 16), std::bad_alloc);
     }
 
     SECTION("Deallocate LIFO")

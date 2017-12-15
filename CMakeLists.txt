@@ -122,6 +122,8 @@ target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
 target_compile_options(gbBase PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
+target_sources(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/debug_visualizers/gbBase.natvis>)
+set_property(SOURCE ${PROJECT_SOURCE_DIR}/debug_visualizers/gbBase.natvis PROPERTY VS_TOOL_OVERRIDE Natvis)
 
 option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
 include(GenerateExportHeader)
