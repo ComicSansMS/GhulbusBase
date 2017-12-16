@@ -61,6 +61,7 @@ endif()
 set(GB_BASE_ALLOCATOR_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyMonotonic.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyRing.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyStack.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/DebugPolicy.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/StatefulAllocator.hpp
@@ -89,6 +90,7 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestFinally.cpp
     ${GB_BASE_TEST_DIR}/TestAllocator.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyMonotonic.cpp
+    ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyRing.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyStack.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorDebugPolicy.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorStatefulAllocator.cpp
@@ -184,6 +186,7 @@ if(GB_BUILD_TESTS)
     add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
     target_link_libraries(gbBase_Test PUBLIC gbBase Catch)
     target_include_directories(gbBase_Test PUBLIC ${GB_BASE_TEST_DIR})
+    target_compile_definitions(gbBase_Test PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
     add_test(NAME TestBase COMMAND gbBase_Test)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))

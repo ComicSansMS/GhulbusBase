@@ -74,4 +74,24 @@
       </Synthetic>
     </Expand>
   </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Ring&lt;Ghulbus::testing::MockStorage, *&gt;">
+    <DisplayString>{{ available: ??/{m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
+    <Expand>
+      <Item Name="storage">m_storage->memory_ptr</Item>
+      <Item Name="total">m_storage->memory_size</Item>
+      <Item Name="free right">m_storage->memory_size - m_freeMemoryOffset</Item>
+      <Item Name="free left">(!m_bottomHeader) ? 0 : (((std::byte*)m_bottomHeader) - m_storage->memory_ptr)</Item>
+      <Item Name="wrapped">(m_bottomHeader &gt; m_topHeader)</Item>
+      <Synthetic Name="allocations">
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>m_bottomHeader</HeadPointer>
+            <NextPointer>m_nextHeader</NextPointer>
+            <ValueNode Name="free: {m_wasFreed}">((std::byte*)this + 1)</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
 </AutoVisualizer>
