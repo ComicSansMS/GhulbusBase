@@ -245,4 +245,30 @@ TEST_CASE("Stack Allocation Strategy")
         stack.deallocate(p1, 24);
         CHECK(stack.getFreeMemory() == 64);
     }
+
+    SECTION("Exhaust all memory")
+    {
+        std::aligned_storage_t<64, 16> as;
+        auto ptr = reinterpret_cast<std::byte*>(&as);
+        storage.memory_ptr = ptr;
+        storage.memory_size = 64;
+
+        REQUIRE(stack.getFreeMemory() == 64);
+        std::byte* const p1 = stack.allocate(64 - sizeof(Header), 1);
+        CHECK(stack.getFreeMemory() == 0);
+        CHECK(p1 == storage.memory_ptr + sizeof(Header));
+        stack.deallocate(p1, 64 - sizeof(Header));
+
+        REQUIRE(stack.getFreeMemory() == 64);
+        std::byte* const p2 = stack.allocate(64 - sizeof(Header) - 1, 1);
+        CHECK(stack.getFreeMemory() == 1);
+        CHECK_THROWS_AS(stack.allocate(1, 1), std::bad_alloc);
+        stack.deallocate(p2, 64 - sizeof(Header) - 1);
+
+        REQUIRE(stack.getFreeMemory() == 64);
+        std::byte* const p3 = stack.allocate(64 - 2*sizeof(Header), 1);
+        CHECK(stack.getFreeMemory() == sizeof(Header));
+        CHECK_THROWS_AS(stack.allocate(1, 1), std::bad_alloc);
+        stack.deallocate(p3, 64 - 2*sizeof(Header));
+    }
 }

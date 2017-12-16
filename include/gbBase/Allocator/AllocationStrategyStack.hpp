@@ -46,7 +46,8 @@ namespace AllocationStrategy
  *    padding bytes in the unavailable memory region. If the next allocation now has a weaker alignment
  *    requirement, those bytes will be effectively lost. It would be possible to use a few additional
  *    bits in the header to store the alignment of the block, but this was not deemed worth the
- *    resulting runtime overhead.
+ *    resulting runtime overhead. The lost bytes will get reclaimed when the previous block is freed.
+ *    Padding bytes before the very first block will never be reclaimed.
  *
  * <pre>
  *                              +---prev_header-------+
@@ -121,7 +122,12 @@ public:
     std::byte* allocate(std::size_t n, std::size_t alignment)
     {
         // we have to leave room for the header before the pointer that we return
-        std::size_t free_space = getFreeMemory() - sizeof(Header);
+        std::size_t free_space = getFreeMemory();
+        if(free_space < sizeof(Header)) {
+            // not even enough memory left to store header
+            throw std::bad_alloc();
+        }
+        free_space -= sizeof(Header);
         void* ptr = reinterpret_cast<void*>(m_storage->get() + getFreeMemoryOffset() + sizeof(Header));
         // the alignment has to be at least alignof(Header) to guarantee that the header is
         // stored at its natural alignment.
@@ -148,7 +154,7 @@ public:
         Header* header_start = reinterpret_cast<Header*>(p - sizeof(Header));
         header_start->markFree();
 
-        // advance the top header to the lest until it no longer points to a freed header
+        // advance the top header to the left until it no longer points to a freed header
         while(m_topHeader && (m_topHeader->wasFreed())) {
             header_start = m_topHeader;
             m_topHeader = header_start->previousHeader();
