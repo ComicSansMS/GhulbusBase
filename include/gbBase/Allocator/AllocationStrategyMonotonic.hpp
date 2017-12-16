@@ -11,6 +11,7 @@
 #include <gbBase/Allocator/DebugPolicy.hpp>
 #include <gbBase/Allocator/Storage.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <new>
@@ -59,6 +60,7 @@ public:
      */
     std::byte* allocate(std::size_t n, std::size_t alignment)
     {
+        n = std::max(n, std::size_t(1));
         std::size_t free_space = getFreeMemory();
         void* ptr = reinterpret_cast<void*>(m_storage->get() + m_offset);
         if(!std::align(alignment, n, ptr, free_space)) {
