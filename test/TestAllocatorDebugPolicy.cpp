@@ -2,7 +2,11 @@
 
 #include <gbBase/Assert.hpp>
 
+#include <MockDebugPolicy.hpp>
+
 #include <catch.hpp>
+
+#include <array>
 
 namespace {
 struct NoReturn {};
@@ -194,4 +198,101 @@ TEST_CASE("Debug Policy Tracking")
     }
 
     Assert::setAssertionHandler(Assert::failAbort);
+}
+
+TEST_CASE("Debug Policy Combined Policy")
+{
+    using namespace GHULBUS_BASE_NAMESPACE;
+
+    using testing::MockDebugPolicy;
+
+    MockDebugPolicy::number_on_allocate_calls = 0;
+    MockDebugPolicy::number_on_deallocate_calls = 0;
+    MockDebugPolicy::number_on_reset_calls = 0;
+
+    Allocator::DebugPolicy::CombinedPolicy<MockDebugPolicy> pol_single;
+    MockDebugPolicy::number_on_allocate_calls = 0;
+    MockDebugPolicy::number_on_deallocate_calls = 0;
+    MockDebugPolicy::number_on_reset_calls = 0;
+    pol_single.onAllocate(0, 0, nullptr);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 0);
+    pol_single.onDeallocate(nullptr, 0);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 0);
+    pol_single.onReset();
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 1);
+
+    Allocator::DebugPolicy::CombinedPolicy<MockDebugPolicy, MockDebugPolicy> pol_double;
+    MockDebugPolicy::number_on_allocate_calls = 0;
+    MockDebugPolicy::number_on_deallocate_calls = 0;
+    MockDebugPolicy::number_on_reset_calls = 0;
+    pol_double.onAllocate(0, 0, nullptr);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 0);
+    pol_double.onDeallocate(nullptr, 0);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 2);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 0);
+    pol_double.onReset();
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 2);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 2);
+
+
+    Allocator::DebugPolicy::CombinedPolicy<MockDebugPolicy, MockDebugPolicy, MockDebugPolicy> pol_triple;
+    MockDebugPolicy::number_on_allocate_calls = 0;
+    MockDebugPolicy::number_on_deallocate_calls = 0;
+    MockDebugPolicy::number_on_reset_calls = 0;
+    pol_triple.onAllocate(0, 0, nullptr);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 3);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 0);
+    pol_triple.onDeallocate(nullptr, 0);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 3);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 3);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 0);
+    pol_triple.onReset();
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 3);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 3);
+    CHECK(MockDebugPolicy::number_on_reset_calls == 3);
+
+    Allocator::DebugPolicy::CombinedPolicy<MockDebugPolicy, Allocator::DebugPolicy::AllocateDeallocateCounter> pol1;
+    MockDebugPolicy::number_on_allocate_calls = 0;
+    MockDebugPolicy::number_on_deallocate_calls = 0;
+    pol1.onAllocate(0, 0, nullptr);
+    CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
+    CHECK(pol1.getContainedPolicy<1>().getCount() == 1);
+    pol1.onDeallocate(nullptr, 0);
+    CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
+    CHECK(pol1.getContainedPolicy<1>().getCount() == 0);
+}
+
+TEST_CASE("Debug Policy Debug Heap")
+{
+    using namespace GHULBUS_BASE_NAMESPACE;
+
+    Allocator::DebugPolicy::DebugHeap pol;
+
+    std::array<std::byte, 12> mem;
+    mem.fill(std::byte(0));
+
+    pol.onAllocate(10, 1, mem.data() + 1);
+    CHECK(mem[0] == std::byte(0x00));
+    for(int i=0; i<10; ++i) {
+        CHECK(mem[1 + i] == std::byte(0xcd));
+    }
+    CHECK(mem[11] == std::byte(0x00));
+
+    pol.onDeallocate(mem.data() + 1, 10);
+    CHECK(mem[0] == std::byte(0x00));
+    for(int i=0; i<10; ++i) {
+        CHECK(mem[1 + i] == std::byte(0xdd));
+    }
+    CHECK(mem[11] == std::byte(0x00));
 }

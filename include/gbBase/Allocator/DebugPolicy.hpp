@@ -14,9 +14,12 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <iterator>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 namespace GHULBUS_BASE_NAMESPACE
 {
@@ -168,6 +171,99 @@ public:
                        [](auto const& p) { return p.second; });
         std::sort(begin(ret), end(ret), [](Record const& lhs, Record const& rhs) { return lhs.id < rhs.id; });
         return ret;
+    }
+};
+
+/** A debug policy combined of multiple other debug policies.
+* All calls to the combined policy will get forwarded to each of the contained policies in turn.
+*/
+template<typename... Policies_T>
+class CombinedPolicy {
+public:
+    using is_thread_safe = std::false_type;
+private:
+    std::tuple<Policies_T...> m_policies;
+public:
+    /** @copydoc NoDebug::onAllocate() */
+    void onAllocate(std::size_t n, std::size_t alignment, std::byte* allocated_ptr)
+    {
+        invoke_onAllocate(m_policies, std::make_index_sequence<sizeof...(Policies_T)>(),
+            n, alignment, allocated_ptr);
+        // the following code would be shorter, but does not work currently on msvc:
+        //auto invoke = [=](auto t) { t.onAllocate(n, alignment, allocated_ptr); };
+        //auto applier = [=](auto... ts) { (invoke(ts), ...); };
+        //std::apply(applier, m_policies);
+    }
+
+    /** @copydoc NoDebug::onDeallocate() */
+    void onDeallocate(std::byte* p, std::size_t n)
+    {
+        invoke_onDeallocate(m_policies, std::make_index_sequence<sizeof...(Policies_T)>(),
+            p, n);
+    }
+
+    /** @copydoc NoDebug::onReset() */
+    void onReset()
+    {
+        invoke_onReset(m_policies, std::make_index_sequence<sizeof...(Policies_T)>());
+    }
+
+    /** Retrieve one of the contained policies.
+    * @tparam I 0-based index of a policy from the Policies_T class template parameter list.
+    */
+    template<std::size_t I>
+    auto& getContainedPolicy()
+    {
+        return std::get<I>(m_policies);
+    }
+
+private:
+    template<typename... Ts, std::size_t... Is>
+    void invoke_onAllocate(std::tuple<Ts...>& policies, std::index_sequence<Is...>,
+        std::size_t n, std::size_t alignment, std::byte* allocated_ptr)
+    {
+        using expander = int [];
+        (void) expander { 0, (std::get<Is>(policies).onAllocate(n, alignment, allocated_ptr), 0)... };
+    }
+
+    template<typename... Ts, std::size_t... Is>
+    void invoke_onDeallocate(std::tuple<Ts...>& policies, std::index_sequence<Is...>,
+        std::byte* p, std::size_t n)
+    {
+        using expander = int [];
+        (void) expander { 0, (std::get<Is>(policies).onDeallocate(p, n), 0)... };
+    }
+
+    template<typename... Ts, std::size_t... Is>
+    void invoke_onReset(std::tuple<Ts...>& policies, std::index_sequence<Is...>)
+    {
+        using expander = int [];
+        (void) expander { 0, (std::get<Is>(policies).onReset(), 0)... };
+    }
+};
+
+/** Writes magic bit patterns into memory to ease debugging.
+ */
+class DebugHeap {
+public:
+    using is_thread_safe = std::false_type;
+public:
+    /** @copydoc NoDebug::onAllocate() */
+    void onAllocate(std::size_t n, std::size_t alignment, std::byte* allocated_ptr)
+    {
+        GHULBUS_UNUSED_VARIABLE(alignment);
+        std::memset(allocated_ptr, 0xcd, n);
+    }
+
+    /** @copydoc NoDebug::onDeallocate() */
+    void onDeallocate(std::byte* p, std::size_t n)
+    {
+        std::memset(p, 0xdd, n);
+    }
+
+    /** @copydoc NoDebug::onReset() */
+    void onReset()
+    {
     }
 };
 }
