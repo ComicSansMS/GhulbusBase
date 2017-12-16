@@ -271,4 +271,53 @@ TEST_CASE("Stack Allocation Strategy")
         CHECK_THROWS_AS(stack.allocate(1, 1), std::bad_alloc);
         stack.deallocate(p3, 64 - 2*sizeof(Header));
     }
+
+    SECTION("Zero-sized array allocation")
+    {
+        std::aligned_storage_t<64, 16> as;
+        auto ptr = reinterpret_cast<std::byte*>(&as);
+        storage.memory_ptr = ptr;
+        storage.memory_size = 64;
+
+        std::byte* const p1 = stack.allocate(0, 1);
+        CHECK(p1 == ptr + sizeof(Header));
+        CHECK(stack.getFreeMemory() == 64 - sizeof(Header));
+
+        // 0-size allocations still respect alignment
+        std::byte* const p2 = stack.allocate(1, 1);
+        CHECK(p2 == ptr + 2*sizeof(Header));
+        CHECK(stack.getFreeMemory() == 64 - 2*sizeof(Header) - 1);
+        std::byte* const p3 = stack.allocate(0, 16);
+        CHECK(p3 == ptr + 32);
+        CHECK(stack.getFreeMemory() == 32);
+
+        // alignment is always at least the header alignment
+        std::byte* const p4 = stack.allocate(4, 1);
+        CHECK(p4 == ptr + 40);
+        CHECK(stack.getFreeMemory() == 20);
+        std::byte* const p5 = stack.allocate(0, 1);
+        CHECK(p5 == ptr + 40 + sizeof(Header) + alignof(Header));
+        CHECK(stack.getFreeMemory() == 8);
+
+        // 0-size allocations can exhaust memory
+        std::byte* const p6 = stack.allocate(0, 1);
+        // note that p6 points one beyond the end of storage here
+        // this should be fine, as dereferencing pointers returned by 0-size allocs is not allowed
+        CHECK(p6 == ptr + 64);
+        CHECK(stack.getFreeMemory() == 0);
+        CHECK_THROWS_AS(stack.allocate(0, 1), std::bad_alloc);
+
+        stack.deallocate(p6, 0);
+        CHECK(stack.getFreeMemory() == 8);
+        stack.deallocate(p5, 0);
+        CHECK(stack.getFreeMemory() == 16);
+        stack.deallocate(p4, 4);
+        CHECK(stack.getFreeMemory() == 32);
+        stack.deallocate(p3, 0);
+        CHECK(stack.getFreeMemory() == 40);
+        stack.deallocate(p2, 1);
+        CHECK(stack.getFreeMemory() == 56);
+        stack.deallocate(p1, 0);
+        CHECK(stack.getFreeMemory() == 64);
+    }
 }
