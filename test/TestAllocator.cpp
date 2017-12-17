@@ -11,7 +11,7 @@ TEST_CASE("Allocator integration test")
     using namespace GHULBUS_BASE_NAMESPACE;
 
     Allocator::Storage::Dynamic storage(1024);
-    Allocator::AllocationStrategy::Monotonic<Allocator::Storage::Dynamic> monotonic(storage);
+    Allocator::AllocationStrategy::Monotonic<> monotonic(storage);
     Allocator::StatefulAllocator<double, decltype(monotonic)> allocator(monotonic);
 
     std::vector<double, decltype(allocator)> my_vector(allocator);

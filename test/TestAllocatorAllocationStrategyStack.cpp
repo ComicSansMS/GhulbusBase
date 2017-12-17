@@ -14,8 +14,7 @@ TEST_CASE("Stack Allocation Strategy")
 
     MockStorage storage;
 
-    Allocator::AllocationStrategy::Stack<MockStorage, MockDebugPolicy> stack(storage);
-    using Header = decltype(stack)::Header;
+    using Header = Allocator::AllocationStrategy::Stack<MockDebugPolicy>::Header;
     MockDebugPolicy::number_on_allocate_calls = 0;
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;
@@ -42,6 +41,7 @@ TEST_CASE("Stack Allocation Strategy")
     SECTION("Size and offset")
     {
         storage.memory_size = 42;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
         CHECK(stack.getFreeMemory() == 42);
         CHECK(stack.getFreeMemoryOffset() == 0);
     }
@@ -52,6 +52,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 256;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         CHECK(MockDebugPolicy::number_on_allocate_calls == 0);
         std::byte* const p1 = stack.allocate(1, 1);
@@ -87,6 +88,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 64;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         CHECK(MockDebugPolicy::number_on_allocate_calls == 0);
         CHECK_THROWS_AS(stack.allocate(64, 1), std::bad_alloc);
@@ -99,6 +101,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 256;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         std::byte* const p1 = stack.allocate(20, 16);
         Header const* const h1 = reinterpret_cast<Header const*>(p1 - sizeof(Header));
@@ -120,6 +123,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 64;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         std::byte* const p1 = stack.allocate(20, 16);
         CHECK(p1 == ptr + 16);
@@ -134,6 +138,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 256;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         std::byte* const p1 = stack.allocate(8, 8);
         Header const* const h1 = reinterpret_cast<Header const*>(p1 - sizeof(Header));
@@ -177,6 +182,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 256;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         std::byte* const p1 = stack.allocate(8, 8);
         Header const* const h1 = reinterpret_cast<Header const*>(p1 - sizeof(Header));
@@ -217,6 +223,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 64;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         CHECK(stack.getFreeMemory() == 64);
         std::byte* const p1 = stack.allocate(24, 8);
@@ -252,6 +259,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 64;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         REQUIRE(stack.getFreeMemory() == 64);
         std::byte* const p1 = stack.allocate(64 - sizeof(Header), 1);
@@ -278,6 +286,7 @@ TEST_CASE("Stack Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 64;
+        Allocator::AllocationStrategy::Stack<MockDebugPolicy> stack(storage);
 
         std::byte* const p1 = stack.allocate(0, 1);
         CHECK(p1 == ptr + sizeof(Header));

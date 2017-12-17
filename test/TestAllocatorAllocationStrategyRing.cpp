@@ -17,8 +17,7 @@ TEST_CASE("Ring Allocation Strategy")
 
     MockStorage storage;
 
-    Allocator::AllocationStrategy::Ring<MockStorage, MockDebugPolicy> ring(storage);
-    using Header = decltype(ring)::Header;
+    using Header = Allocator::AllocationStrategy::Ring<MockDebugPolicy>::Header;
     MockDebugPolicy::number_on_allocate_calls = 0;
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;
@@ -58,6 +57,7 @@ TEST_CASE("Ring Allocation Strategy")
         std::byte x;
         storage.memory_ptr = &x;
         storage.memory_size = 42;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
         CHECK(!ring.isWrappedAround());
         CHECK(ring.getFreeMemoryOffset() == 0);
     }
@@ -68,6 +68,7 @@ TEST_CASE("Ring Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 128;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         CHECK(ring.getFreeMemoryOffset() == 0);
         auto const p1 = ring.allocate(16, 1);
@@ -82,6 +83,7 @@ TEST_CASE("Ring Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 128;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         // |------|
         auto const p1 = ring.allocate(128 - sizeof(Header), alignof(Header));
@@ -151,6 +153,7 @@ TEST_CASE("Ring Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 128;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         // |---------------|
         auto const p1 = ring.allocate(72 - sizeof(Header), alignof(Header));
@@ -249,6 +252,7 @@ TEST_CASE("Ring Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 128;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         // |------------|
         auto const p1 = ring.allocate(64 - sizeof(Header), alignof(Header));
@@ -327,6 +331,7 @@ TEST_CASE("Ring Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 128;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         CHECK(ring.getFreeMemoryOffset() == 0);
         auto const p1 = ring.allocate(64, 1);
@@ -371,6 +376,7 @@ TEST_CASE("Ring Allocation Strategy")
         auto ptr = reinterpret_cast<std::byte*>(&as);
         storage.memory_ptr = ptr;
         storage.memory_size = 128;
+        Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         auto const p1 = ring.allocate(0, 1);
         CHECK(p1 == ptr + sizeof(Header));

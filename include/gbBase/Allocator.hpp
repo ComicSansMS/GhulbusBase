@@ -10,6 +10,7 @@
 
 #include <gbBase/Allocator/AllocationStrategyMonotonic.hpp>
 #include <gbBase/Allocator/StatefulAllocator.hpp>
+#include <gbBase/Allocator/Storage.hpp>
 
 namespace GHULBUS_BASE_NAMESPACE
 {

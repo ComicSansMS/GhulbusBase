@@ -9,7 +9,7 @@
 #include <gbBase/config.hpp>
 
 #include <gbBase/Allocator/DebugPolicy.hpp>
-#include <gbBase/Allocator/Storage.hpp>
+#include <gbBase/Allocator/StorageView.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -58,7 +58,7 @@ namespace AllocationStrategy
  *   +--------+-------+---------+--------+-------+--------+-------+---------+--------+-------+-------------+
  *   ^        ^                          ^                ^                 ^        ^       ^
  *   |        p1                         p2               p3                |        p4      |
- * m_storage.get()                                                     m_topHeader       m_freeMemoryOffset
+ * m_storage.ptr                                                       m_topHeader       m_freeMemoryOffset
   </pre>
  *
  * Upon deallocation:
@@ -68,7 +68,7 @@ namespace AllocationStrategy
  *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered.
  *
  */
-template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
+template<typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Stack : private Debug_T {
 public:
     /** Header used for internal bookkeeping of allocations.
@@ -111,12 +111,13 @@ public:
         }
     };
 private:
-    Storage_T* m_storage;
+    StorageView m_storage;
     Header* m_topHeader;                ///< Header of the top-most allocation.
     std::size_t m_freeMemoryOffset;     ///< Offset to the start of the free memory region in bytes.
 public:
-    Stack(Storage_T& storage) noexcept
-        :m_storage(&storage), m_topHeader(nullptr), m_freeMemoryOffset(0)
+    template<typename Storage_T>
+    explicit Stack(Storage_T& storage) noexcept
+        :m_storage(makeStorageView(storage)), m_topHeader(nullptr), m_freeMemoryOffset(0)
     {}
 
     std::byte* allocate(std::size_t n, std::size_t alignment)
@@ -128,7 +129,7 @@ public:
             throw std::bad_alloc();
         }
         free_space -= sizeof(Header);
-        void* ptr = reinterpret_cast<void*>(m_storage->get() + getFreeMemoryOffset() + sizeof(Header));
+        void* ptr = reinterpret_cast<void*>(m_storage.ptr + getFreeMemoryOffset() + sizeof(Header));
         // the alignment has to be at least alignof(Header) to guarantee that the header is
         // stored at its natural alignment.
         // As usual, this assumes that all alignments are powers of two.
@@ -140,7 +141,7 @@ public:
         // setup a header in the memory region immediately preceding ret
         Header* new_header = new (ret - sizeof(Header)) Header(m_topHeader);
         m_topHeader = new_header;
-        m_freeMemoryOffset = (ret - m_storage->get()) + n;
+        m_freeMemoryOffset = (ret - m_storage.ptr) + n;
 
         this->onAllocate(n, alignment, ret);
         return ret;
@@ -158,7 +159,7 @@ public:
         while(m_topHeader && (m_topHeader->wasFreed())) {
             header_start = m_topHeader;
             m_topHeader = header_start->previousHeader();
-            m_freeMemoryOffset = (reinterpret_cast<std::byte*>(header_start) - m_storage->get());
+            m_freeMemoryOffset = (reinterpret_cast<std::byte*>(header_start) - m_storage.ptr);
             header_start->~Header();
         }
     }
@@ -174,7 +175,7 @@ public:
      */
     std::size_t getFreeMemory() const noexcept
     {
-        return m_storage->size() - getFreeMemoryOffset();
+        return m_storage.size - getFreeMemoryOffset();
     }
 };
 }

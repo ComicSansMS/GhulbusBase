@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;Ghulbus::testing::MockStorage, *&gt;">
-    <DisplayString>{{ available: {m_storage->memory_size - m_offset}/{m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
-  </Type>
-
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;Ghulbus::Allocator::Storage::Dynamic, *&gt;">
-    <DisplayString>{{ available: {m_storage->m_size - m_offset}/{m_storage->m_size}, dynamic memory }}</DisplayString>
-  </Type>
-
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;Ghulbus::Allocator::Storage::Static&lt;*&gt;, *&gt;">
-    <DisplayString>{{ available: {$T1 - m_offset}/{$T1}, static memory }}</DisplayString>
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Monotonic&lt;*&gt;">
+    <DisplayString>{{ available: {m_storage.size - m_offset}/{m_storage.size}, mock {m_storage.ptr} }}</DisplayString>
   </Type>
 
   <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;*&gt;::Header">
@@ -21,48 +13,12 @@
     </Expand>
   </Type>
 
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;Ghulbus::testing::MockStorage, *&gt;">
-    <DisplayString>{{ available: {m_storage->memory_size - m_freeMemoryOffset}/{m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;*&gt;">
+    <DisplayString>{{ available: {m_storage.size - m_freeMemoryOffset}/{m_storage.size}, mock {m_storage.ptr} }}</DisplayString>
     <Expand>
-      <Item Name="storage">m_storage->memory_ptr</Item>
-      <Item Name="total">m_storage->memory_size</Item>
-      <Item Name="free">m_storage->memory_size - m_freeMemoryOffset</Item>
-      <Synthetic Name="allocations">
-        <Expand>
-          <LinkedListItems>
-            <HeadPointer>m_topHeader</HeadPointer>
-            <NextPointer>(Header*)(m_data &amp; ~(uintptr_t(0x01)))</NextPointer>
-            <ValueNode Name="free: {((m_data &amp; 0x01) != 0)}">((std::byte*)this + 1)</ValueNode>
-          </LinkedListItems>
-        </Expand>
-      </Synthetic>
-    </Expand>
-  </Type>
-
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;Ghulbus::Allocator::Storage::Dynamic, *&gt;">
-    <DisplayString>{{ available: {m_storage->m_size - m_freeMemoryOffset}/{m_storage->m_size}, dynamic memory }}</DisplayString>
-    <Expand>
-      <Item Name="storage">m_storage->m_storage</Item>
-      <Item Name="total">m_storage->m_size</Item>
-      <Item Name="free">m_storage->m_size - m_freeMemoryOffset</Item>
-      <Synthetic Name="allocations">
-        <Expand>
-          <LinkedListItems>
-            <HeadPointer>m_topHeader</HeadPointer>
-            <NextPointer>(Header*)(m_data &amp; ~(uintptr_t(0x01)))</NextPointer>
-            <ValueNode Name="free: {((m_data &amp; 0x01) != 0)}">((std::byte*)this + 1)</ValueNode>
-          </LinkedListItems>
-        </Expand>
-      </Synthetic>
-    </Expand>
-  </Type>
-
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Stack&lt;Ghulbus::Allocator::Storage::Static&lt;*&gt;, *&gt;">
-    <DisplayString>{{ available: {$T1 - m_freeMemoryOffset}/{$T1}, static memory }}</DisplayString>
-    <Expand>
-      <Item Name="storage">m_storage</Item>
-      <Item Name="total">$T1</Item>
-      <Item Name="free">$T1 - m_freeMemoryOffset</Item>
+      <Item Name="storage">m_storage.ptr</Item>
+      <Item Name="total">m_storage.size</Item>
+      <Item Name="free">m_storage.size - m_freeMemoryOffset</Item>
       <Synthetic Name="allocations">
         <Expand>
           <LinkedListItems>
@@ -84,19 +40,19 @@
     </Expand>
   </Type>
 
-  <Type Name="Ghulbus::Allocator::AllocationStrategy::Ring&lt;Ghulbus::testing::MockStorage, *&gt;">
-    <DisplayString>{{ total: {m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Ring&lt;*&gt;">
+    <DisplayString>{{ total: {m_storage.size}, mock {m_storage.ptr} }}</DisplayString>
     <Expand>
-      <Item Name="storage">m_storage->memory_ptr</Item>
-      <Item Name="total">m_storage->memory_size</Item>
+      <Item Name="storage">m_storage.ptr</Item>
+      <Item Name="total">m_storage.size</Item>
       <Item Name="offset">m_freeMemoryOffset</Item>
       <Item Name="wrapped">(m_bottomHeader &gt; m_topHeader)</Item>
       <Synthetic Name="allocations">
         <Expand>
           <CustomListItems Condition="m_topHeader != nullptr">
-            <Variable Name="memBase" InitialValue="m_storage->memory_ptr"/>
-            <Variable Name="memEnd" InitialValue="(m_bottomHeader &gt; m_topHeader) ? ((std::byte*)m_bottomHeader) : (m_storage->memory_ptr + m_freeMemoryOffset)"/>
-            <Variable Name="bufferEnd" InitialValue="m_storage->memory_ptr + m_storage->memory_size"/>
+            <Variable Name="memBase" InitialValue="m_storage.ptr"/>
+            <Variable Name="memEnd" InitialValue="(m_bottomHeader &gt; m_topHeader) ? ((std::byte*)m_bottomHeader) : (m_storage.ptr + m_freeMemoryOffset)"/>
+            <Variable Name="bufferEnd" InitialValue="m_storage.ptr + m_storage.size"/>
             <Variable Name="itHeader" InitialValue="m_bottomHeader"/>
             <Variable Name="distanceToNext" InitialValue="0"/>
             <Variable Name="nElements" InitialValue="0"/>

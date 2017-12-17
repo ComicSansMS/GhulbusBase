@@ -9,7 +9,7 @@
 #include <gbBase/config.hpp>
 
 #include <gbBase/Allocator/DebugPolicy.hpp>
-#include <gbBase/Allocator/Storage.hpp>
+#include <gbBase/Allocator/StorageView.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -43,14 +43,15 @@ namespace AllocationStrategy
  * </pre>
  *
  */
-template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
+template<typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Monotonic : private Debug_T {
 private:
-    Storage_T* m_storage;
+    StorageView m_storage;
     std::size_t m_offset;
 public:
-    Monotonic(Storage_T& storage) noexcept
-        :m_storage(&storage), m_offset(0)
+    template<typename Storage_T>
+    explicit Monotonic(Storage_T& storage) noexcept
+        :m_storage(makeStorageView(storage)), m_offset(0)
     {}
 
     /** Allocate a region of n bytes starting at an address with the specified alignment.
@@ -62,12 +63,12 @@ public:
     {
         n = std::max(n, std::size_t(1));
         std::size_t free_space = getFreeMemory();
-        void* ptr = reinterpret_cast<void*>(m_storage->get() + m_offset);
+        void* ptr = reinterpret_cast<void*>(m_storage.ptr + m_offset);
         if(!std::align(alignment, n, ptr, free_space)) {
             throw std::bad_alloc();
         }
         std::byte* ret = reinterpret_cast<std::byte*>(ptr);
-        m_offset = (ret - m_storage->get()) + n;
+        m_offset = (ret - m_storage.ptr) + n;
         this->onAllocate(n, alignment, ret);
         return ret;
     }
@@ -83,7 +84,7 @@ public:
      */
     std::size_t getFreeMemory() const noexcept
     {
-        return m_storage->size() - m_offset;
+        return m_storage.size - m_offset;
     }
 
     /** Explicitly resets the allocator, discarding all previously allocated blocks.

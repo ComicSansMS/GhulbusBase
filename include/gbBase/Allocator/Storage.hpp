@@ -8,6 +8,8 @@
 */
 #include <gbBase/config.hpp>
 
+#include <gbBase/Allocator/StorageView.hpp>
+
 #include <cstddef>
 #include <memory>
 #include <type_traits>

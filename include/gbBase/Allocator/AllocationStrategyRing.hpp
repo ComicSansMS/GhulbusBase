@@ -9,7 +9,7 @@
 #include <gbBase/config.hpp>
 
 #include <gbBase/Allocator/DebugPolicy.hpp>
-#include <gbBase/Allocator/Storage.hpp>
+#include <gbBase/Allocator/StorageView.hpp>
 
 #include <gbBase/Assert.hpp>
 
@@ -69,7 +69,7 @@ namespace AllocationStrategy
  *   +--------+-------+---------+--------+-------+--------+-------+---------+--------+-------+-------------+
  *   ^        ^                          ^                ^                 ^        ^       ^
  *   |        p1                         p2               p3                |        p4      |
- *  m_storage.get(), m_bottomHeader                                      m_topHeader      m_freeMemoryOffset
+ *  m_storage.ptr    m_bottomHeader                                      m_topHeader      m_freeMemoryOffset
  *
  * </pre>
  *
@@ -92,7 +92,7 @@ namespace AllocationStrategy
  *   +--------+-------+--------+-------+--------------------------+--------+----------+--------------------+
  *   ^        ^       ^        ^       ^                          ^        ^
  *   |        p6      |        p7      |                          |        p5
- *  m_storage.get()  m_topHeader    m_freeMemoryOffset           m_bottomHeader
+ *  m_storage.ptr    m_topHeader    m_freeMemoryOffset           m_bottomHeader
  *
  * </pre>
  *
@@ -105,7 +105,7 @@ namespace AllocationStrategy
  *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered
  *    from the top, or to the beginning of the storage if no more headers remain.
  */
-template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
+template<typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Ring : private Debug_T {
 public:
     /** Header used for internal bookkeeping of allocations.
@@ -176,24 +176,25 @@ public:
         }
     };
 private:
-    Storage_T* m_storage;
+    StorageView m_storage;
     Header* m_topHeader;                    ///< Header of the top-most (most-recent) allocation.
     Header* m_bottomHeader;                 ///< Header of the bottom-most (oldest) allocation.
     std::size_t m_freeMemoryOffset;         ///< Offset to the start of the free memory region in bytes
 
 public:
-    Ring(Storage_T& storage) noexcept
-        :m_storage(&storage), m_topHeader(nullptr), m_bottomHeader(nullptr), m_freeMemoryOffset(0)
+    template<typename Storage_T>
+    explicit Ring(Storage_T& storage) noexcept
+        :m_storage(makeStorageView(storage)), m_topHeader(nullptr), m_bottomHeader(nullptr), m_freeMemoryOffset(0)
     {}
 
     std::byte* allocate(std::size_t n, std::size_t alignment)
     {
         auto const getFreeMemoryContiguous = [this](std::size_t offs) -> std::size_t {
-                std::byte* offs_ptr = (m_storage->get() + offs);
+                std::byte* offs_ptr = (m_storage.ptr + offs);
                 std::byte* bottom_ptr = reinterpret_cast<std::byte*>(m_bottomHeader);
                 if(bottom_ptr < offs_ptr) {
                     // linear case: free space from offset to end of storage
-                    return m_storage->size() - offs;
+                    return m_storage.size - offs;
                 } else {
                     // wrap-around case: free space from offset to bottom header
                     return bottom_ptr - offs_ptr;
@@ -203,7 +204,7 @@ public:
         std::size_t free_space = getFreeMemoryContiguous(m_freeMemoryOffset);
         bool const out_of_memory = (free_space < sizeof(Header));
         free_space -= (out_of_memory) ? 0 : sizeof(Header);
-        void* ptr = reinterpret_cast<void*>(m_storage->get() + getFreeMemoryOffset() + sizeof(Header));
+        void* ptr = reinterpret_cast<void*>(m_storage.ptr + getFreeMemoryOffset() + sizeof(Header));
         // the alignment has to be at least alignof(Header) to guarantee that the header is
         // stored at its natural alignment.
         // As usual, this assumes that all alignments are powers of two.
@@ -214,7 +215,7 @@ public:
                 throw std::bad_alloc();
             }
             free_space -= sizeof(Header);
-            ptr = reinterpret_cast<void*>(m_storage->get() + sizeof(Header));
+            ptr = reinterpret_cast<void*>(m_storage.ptr + sizeof(Header));
             if(!std::align(std::max(alignment, alignof(Header)), n, ptr, free_space)) {
                 // not enough free space in the beginning either
                 throw std::bad_alloc();
@@ -231,7 +232,7 @@ public:
         }
         m_topHeader = new_header;
         GHULBUS_ASSERT_DBG(m_bottomHeader);
-        m_freeMemoryOffset = (ret - m_storage->get()) + n;
+        m_freeMemoryOffset = (ret - m_storage.ptr) + n;
 
         this->onAllocate(n, alignment, ret);
         return ret;
@@ -251,7 +252,7 @@ public:
             m_topHeader = header_start->previousHeader();
             if(m_topHeader) {
                 m_topHeader->clearNextHeader();
-                m_freeMemoryOffset = (reinterpret_cast<std::byte*>(header_start) - m_storage->get());
+                m_freeMemoryOffset = (reinterpret_cast<std::byte*>(header_start) - m_storage.ptr);
             } else {
                 GHULBUS_ASSERT_DBG(m_bottomHeader == header_start);
                 m_bottomHeader = nullptr;
@@ -283,7 +284,7 @@ public:
     bool isWrappedAround() const
     {
         // we are wrapped iff the current offset is left of the bottom header
-        return (m_storage->get() + getFreeMemoryOffset()) <= reinterpret_cast<std::byte*>(m_bottomHeader);
+        return (m_storage.ptr + getFreeMemoryOffset()) <= reinterpret_cast<std::byte*>(m_bottomHeader);
     }
 };
 }
