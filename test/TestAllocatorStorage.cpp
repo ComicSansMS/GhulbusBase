@@ -33,6 +33,13 @@ TEST_CASE("Static Storage")
         CHECK(storage.size() == sizeof(double));
         CHECK(sizeof(storage) == sizeof(double));
     }
+
+    {
+        Allocator::Storage::Static<128, 1> storage;
+        auto const view = makeStorageView(storage);
+        CHECK(view.ptr == storage.get());
+        CHECK(view.size == storage.size());
+    }
 }
 
 TEST_CASE("Dynamic Storage")
@@ -50,5 +57,12 @@ TEST_CASE("Dynamic Storage")
 
         CHECK(storage.get() != nullptr);
         CHECK(storage.size() == (1 << 20));
+    }
+
+    {
+        Allocator::Storage::Dynamic storage(128);
+        auto const view = makeStorageView(storage);
+        CHECK(view.ptr == storage.get());
+        CHECK(view.size == storage.size());
     }
 }

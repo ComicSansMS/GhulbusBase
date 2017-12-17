@@ -60,6 +60,8 @@ public:
         return m_size;
     }
 };
+
+using ::GHULBUS_BASE_NAMESPACE::Allocator::makeStorageView;
 }
 }
 }
