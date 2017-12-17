@@ -27,6 +27,83 @@ namespace AllocationStrategy
 {
 
 /** The ring allocation strategy.
+ * A ring is an extension of the Stack allocation strategy, that uses a doubly-linked list of Headers, instead of
+ * the singly-linked list used by Stack. This allows memory to be reclaimed from both ends of the list, not just
+ * the top, enabling both LIFO and FIFO style allocations, as well as mixes of the two.
+ * Reclaiming memory from the beginning will leave a gap of free memory at the start of the storage buffer.
+ * In order to make use of that memory, the ring will attempt to *wrap-around* when it runs out of memory
+ * towards the end of the storage buffer. The wrap-around is imperfect in that a contiguous block cannot be wrapped,
+ * thus the end of the storage buffer acts as a natural fragmentation point in the conceptually circular memory space.
+ *
+ * The following picture shows the internal state after 4 allocations p1 through p4. This state is very similar
+ * to that of a Stack allocator, except that all Headers also maintain pointers to the next element.
+ *  - Each allocated block is preceded by a Header and optionally by a padding region
+ *    to satisfy alignment requirements.
+ *  - Padding is performed such that each pN meets the requested alignment requirement *and*
+ *    the preceding header meets the natural alignment requirement for Header.
+ *  - Each header contains a pointer to the start of the previous header, the start of the next header,
+ *    and a flag indicating whether the corresponding block was deallocated.
+ *  - m_topHeader points to the top-most header that has not been deallocated.
+ *  - m_bottomHeader points to the bottom-most header that has not been deallocated.
+ *  - The start of the free memory is pointed to by m_freeMemoryOffset.
+ *  - Memory can be reclaimed from both sides by moving the m_bottomHeader pointer to the right, or the
+ *    m_topHeader pointer to the left.
+ *  - Note that since headers do not track the size of their blocks, deallocation can only move
+ *    the free memory offset back to the start of the header of the deallocated block, leaving the
+ *    padding bytes in the unavailable memory region. If the next allocation now has a weaker alignment
+ *    requirement, those bytes will be effectively lost. It would be possible to use a few additional
+ *    bits in the header to store the alignment of the block, but this was not deemed worth the
+ *    resulting runtime overhead. The lost bytes will get reclaimed when the previous block is freed.
+ *    Padding bytes before the very first block will never be reclaimed. This only applies to deallocation
+ *    from the top. Deallocation from the bottom always forwards the m_bottomHeader pointer to the
+ *    next header, effectively reclaiming the padding area preceding that header.
+ *
+ * <pre>
+ *   +----------------------<<-next_header-<<-------------------------------------+
+ *   |                          +--<<-prev_header-<<--+                           |
+ *   +--<<-prev_header-<<-------|----+           +----|--<<-prev_header-<<------ +|
+ *   |      +-->>-next_header->>+    | +-next_h->+    | +->>-next_header->>-+    ||
+ *   v      |                   v    | |         v    | |                   v    ||
+ *   +--------+-------+---------+--------+-------+--------+-------+---------+--------+-------+-------------+
+ *   | Header | Block | Padding | Header | Block | Header | Block | Padding | Header | Block | Free Memory |
+ *   +--------+-------+---------+--------+-------+--------+-------+---------+--------+-------+-------------+
+ *   ^        ^                          ^                ^                 ^        ^       ^
+ *   |        p1                         p2               p3                |        p4      |
+ *  m_storage.get(), m_bottomHeader                                      m_topHeader      m_freeMemoryOffset
+ *
+ * </pre>
+ *
+ * The following picture illustrates the internal state of a wrapped-around ring. An allocation p5 is located
+ * near the end of the ring, but all allocations preceding it have already been freed. The new allocation
+ * p6 is too big to fit in the remaining free memory area to the right of p5, so the ring wraps around,
+ * placing p6 at the beginning of the storage instead.
+ *  - Once a ring has been wrapped around, the free memory at the end of the buffer becomes unavailable,
+ *    until all of the bottom allocations preceding it have been freed.
+ *  - In the wrapped-around case, m_freeMemoryOffset cannot grow bigger than m_bottomHeader.
+ *
+ * <pre>
+ *        +--------------->>--prev_header-->>---------------------+
+ *   +----|-------------------------<<--next_header--<<-----------|-----+
+ *   +--<<|prev_header-<<--+                                      |     |
+ *   |    |+-next_h->-+    |                                      |     |
+ *   v    ||          v    |                                      v     |
+ *   +--------+-------+--------+-------+--------------------------+--------+----------+--------------------+
+ *   | Header | Block | Header | Block | Free Memory              | Header | Block    | Free Memory (unav.)|
+ *   +--------+-------+--------+-------+--------------------------+--------+----------+--------------------+
+ *   ^        ^       ^        ^       ^                          ^        ^
+ *   |        p6      |        p7      |                          |        p5
+ *  m_storage.get()  m_topHeader    m_freeMemoryOffset           m_bottomHeader
+ *
+ * </pre>
+ *
+ * Upon deallocation:
+ *  - The header for the corresponding allocation is marked as free.
+ *  - The m_topHeader will be moved to the left along the list of previous headers until
+ *    it no longer points to a header that is marked free.
+ *  - The m_bottomHeader will be moved to the right along the list of next headers until
+ *    it no longer points to a header that is marked free.
+ *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered
+ *    from the top, or to the beginning of the storage if no more headers remain.
  */
 template<typename Storage_T, typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Ring : private Debug_T {
@@ -36,6 +113,14 @@ public:
      */
     class Header {
     private:
+        /** Packed data field.
+         * The header needs to store the following information:
+         * - pointer to the next Header
+         * - pointer to the previous Header
+         * - flag indicating whether the block was freed
+         * The flag is packed into the least significant bit of the previous pointer,
+         * as that one is always 0 due to Header's own alignment requirements.
+         */
         std::uintptr_t m_data[2];
     public:
         Header(Header* previous_header)
@@ -92,9 +177,9 @@ public:
     };
 private:
     Storage_T* m_storage;
-    Header* m_topHeader;
-    Header* m_bottomHeader;
-    std::size_t m_freeMemoryOffset;
+    Header* m_topHeader;                    ///< Header of the top-most (most-recent) allocation.
+    Header* m_bottomHeader;                 ///< Header of the bottom-most (oldest) allocation.
+    std::size_t m_freeMemoryOffset;         ///< Offset to the start of the free memory region in bytes
 
 public:
     Ring(Storage_T& storage) noexcept
@@ -114,7 +199,7 @@ public:
         if(out_of_memory || (!std::align(std::max(alignment, alignof(Header)), n, ptr, free_space))) {
             // we are out of memory, so try wrap around the ring
             if(isWrappedAround() || ((free_space = getFreeMemoryContiguous(0)) < sizeof(Header))) {
-                // already wrapped, or not enough space even after wrapping
+                // already wrapped, or not enough space for header even after wrapping
                 throw std::bad_alloc();
             }
             free_space -= sizeof(Header);
@@ -180,13 +265,17 @@ public:
         return m_freeMemoryOffset;
     }
 
+    /** Indicated whether the allocator is currently in the wrapped-around state.
+     * A ring is wrapped if new allocations are taken from the beginning of the storage,
+     * while there are still active allocations at the end of the storage.
+     */
     bool isWrappedAround() const
     {
         // we are wrapped iff the current offset is left of the bottom header
         return (m_storage->get() + getFreeMemoryOffset()) <= reinterpret_cast<std::byte*>(m_bottomHeader);
     }
 
-    /** Get the biggest contiguous block starting from offs.
+    /** Get the size of the biggest contiguous block of free memory starting from offs.
      * @pre offs must not point into allocated memory.
      */
     std::size_t getFreeMemoryContiguous(std::size_t offs) const noexcept

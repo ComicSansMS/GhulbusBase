@@ -62,9 +62,9 @@ namespace AllocationStrategy
   </pre>
  *
  * Upon deallocation:
- *  - The header for the corresponding allocation has its size set to 0xffffffffffffffff.
+ *  - The header for the corresponding allocation is marked as free.
  *  - The m_topHeader will be moved to the left along the list of previous headers until
- *    it no longer points to a header with a size of 0xffffffffffffffff.
+ *    it no longer points to a header that is marked free.
  *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered.
  *
  */
@@ -112,8 +112,8 @@ public:
     };
 private:
     Storage_T* m_storage;
-    Header* m_topHeader;            ///< Header of the top-most allocation.
-    std::size_t m_freeMemoryOffset;
+    Header* m_topHeader;                ///< Header of the top-most allocation.
+    std::size_t m_freeMemoryOffset;     ///< Offset to the start of the free memory region in bytes.
 public:
     Stack(Storage_T& storage) noexcept
         :m_storage(&storage), m_topHeader(nullptr), m_freeMemoryOffset(0)
