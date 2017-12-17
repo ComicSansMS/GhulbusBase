@@ -20,6 +20,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace GHULBUS_BASE_NAMESPACE
 {
