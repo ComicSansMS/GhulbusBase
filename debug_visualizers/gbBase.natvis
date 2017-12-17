@@ -75,6 +75,15 @@
     </Expand>
   </Type>
 
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Ring&lt;*&gt;::Header">
+    <DisplayString>{{ next={((Header*)m_data[0])}, previous={(Header*)(m_data[1] &amp; ~(uintptr_t(0x01)))}, wasFreed={((m_data[1] &amp; 0x01) != 0)} }}</DisplayString>
+    <Expand>
+      <Item Name="nextHeader">((Header*)m_data[0])</Item>
+      <Item Name="previousHeader">(Header*)(m_data[1] &amp; ~(uintptr_t(0x01)))</Item>
+      <Item Name="wasFreed">((m_data[1] &amp; 0x01) != 0)</Item>
+    </Expand>
+  </Type>
+
   <Type Name="Ghulbus::Allocator::AllocationStrategy::Ring&lt;Ghulbus::testing::MockStorage, *&gt;">
     <DisplayString>{{ available: ??/{m_storage->memory_size}, mock {m_storage->memory_ptr} }}</DisplayString>
     <Expand>
@@ -85,11 +94,22 @@
       <Item Name="wrapped">(m_bottomHeader &gt; m_topHeader)</Item>
       <Synthetic Name="allocations">
         <Expand>
-          <LinkedListItems>
-            <HeadPointer>m_bottomHeader</HeadPointer>
-            <NextPointer>m_nextHeader</NextPointer>
-            <ValueNode Name="free: {m_wasFreed}">((std::byte*)this + 1)</ValueNode>
-          </LinkedListItems>
+          <CustomListItems Condition="m_topHeader != nullptr">
+            <Variable Name="memBase" InitialValue="m_storage->memory_ptr"/>
+            <Variable Name="memEnd" InitialValue="(m_bottomHeader &gt; m_topHeader) ? ((std::byte*)m_bottomHeader) : (m_storage->memory_ptr + m_freeMemoryOffset)"/>
+            <Variable Name="bufferEnd" InitialValue="m_storage->memory_ptr + m_storage->memory_size"/>
+            <Variable Name="itHeader" InitialValue="m_bottomHeader"/>
+            <Variable Name="distanceToNext" InitialValue="0"/>
+            <Variable Name="nElements" InitialValue="0"/>
+            <Loop Condition="itHeader != nullptr">
+              <Exec Condition="itHeader->m_data[0] != 0">distanceToNext = (((std::byte*)itHeader->m_data[0]) - ((std::byte*)itHeader))</Exec>
+              <Exec Condition="itHeader->m_data[0] == 0">distanceToNext = (memEnd - ((std::byte*)itHeader))</Exec>
+              <Item Name="free: {(itHeader->m_data[1] &amp; 0x01) == 0x01}, offset: {((std::byte*)itHeader) - memBase}, size: {((distanceToNext&lt;0) ? (bufferEnd - ((std::byte*)itHeader)) : distanceToNext)}">((std::byte*)itHeader + 1)</Item>
+              <Exec>itHeader = ((Header*)itHeader->m_data[0])</Exec>
+              <Exec>nElements++</Exec>
+            </Loop>
+            <Item Name="[number of allocations]">nElements</Item>
+          </CustomListItems>
         </Expand>
       </Synthetic>
     </Expand>
