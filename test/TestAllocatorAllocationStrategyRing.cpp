@@ -58,8 +58,8 @@ TEST_CASE("Ring Allocation Strategy")
         std::byte x;
         storage.memory_ptr = &x;
         storage.memory_size = 42;
+        CHECK(!ring.isWrappedAround());
         CHECK(ring.getFreeMemoryOffset() == 0);
-        CHECK(ring.getFreeMemoryContiguous(0) == 42);
     }
 
     SECTION("Allocate")
@@ -362,6 +362,53 @@ TEST_CASE("Ring Allocation Strategy")
         ring.deallocate(p6, 16);
         ring.deallocate(p4, 16);
         CHECK(ring.getFreeMemoryOffset() == 0);
-        CHECK(ring.getFreeMemoryContiguous(0) == 128);
+        CHECK(!ring.isWrappedAround());
+    }
+
+    SECTION("Zero-sized allocation")
+    {
+        std::aligned_storage_t<128, 16> as;
+        auto ptr = reinterpret_cast<std::byte*>(&as);
+        storage.memory_ptr = ptr;
+        storage.memory_size = 128;
+
+        auto const p1 = ring.allocate(0, 1);
+        CHECK(p1 == ptr + sizeof(Header));
+        CHECK(ring.getFreeMemoryOffset() == sizeof(Header));
+
+        auto const p2 = ring.allocate(0, 1);
+        CHECK(p2 == ptr + 2*sizeof(Header));
+        CHECK(ring.getFreeMemoryOffset() == 2*sizeof(Header));
+
+        auto const p3 = ring.allocate(3, 1);
+        CHECK(p3 == ptr + 3*sizeof(Header));
+        CHECK(ring.getFreeMemoryOffset() == 3*sizeof(Header) + 3);
+
+        // alignment is always at least header alignment
+        auto const p4 = ring.allocate(0, 1);
+        CHECK(p4 == ptr + 4*sizeof(Header) + alignof(Header));
+        CHECK(ring.getFreeMemoryOffset() == 4*sizeof(Header) + alignof(Header));
+
+        // otherwise alignment is as requested
+        auto const p5 = ring.allocate(0, 16);
+        CHECK(p5 == ptr + 4*sizeof(Header) + 32);
+        CHECK(ring.getFreeMemoryOffset() == 4*sizeof(Header) + 32);
+
+        // 0-size allocations can exhaust memory
+        auto const p6 = ring.allocate(0, 16);
+        CHECK(ring.getFreeMemoryOffset() == 112);
+        auto const p7 = ring.allocate(0, 16);
+        CHECK(ring.getFreeMemoryOffset() == 128);
+
+        CHECK_THROWS_AS(ring.allocate(0, 1), std::bad_alloc);
+
+        ring.deallocate(p1, 0);
+        ring.deallocate(p2, 0);
+        ring.deallocate(p3, 3);
+        ring.deallocate(p4, 0);
+        ring.deallocate(p5, 0);
+        ring.deallocate(p6, 0);
+        ring.deallocate(p7, 0);
+        CHECK(ring.getFreeMemoryOffset() == 0);
     }
 }

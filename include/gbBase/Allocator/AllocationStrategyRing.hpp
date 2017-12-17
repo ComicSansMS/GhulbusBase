@@ -188,6 +188,17 @@ public:
 
     std::byte* allocate(std::size_t n, std::size_t alignment)
     {
+        auto const getFreeMemoryContiguous = [this](std::size_t offs) -> std::size_t {
+                std::byte* offs_ptr = (m_storage->get() + offs);
+                std::byte* bottom_ptr = reinterpret_cast<std::byte*>(m_bottomHeader);
+                if(bottom_ptr < offs_ptr) {
+                    // linear case: free space from offset to end of storage
+                    return m_storage->size() - offs;
+                } else {
+                    // wrap-around case: free space from offset to bottom header
+                    return bottom_ptr - offs_ptr;
+                }
+            };
         // we have to leave room for the header before the pointer that we return
         std::size_t free_space = getFreeMemoryContiguous(m_freeMemoryOffset);
         bool const out_of_memory = (free_space < sizeof(Header));
@@ -273,22 +284,6 @@ public:
     {
         // we are wrapped iff the current offset is left of the bottom header
         return (m_storage->get() + getFreeMemoryOffset()) <= reinterpret_cast<std::byte*>(m_bottomHeader);
-    }
-
-    /** Get the size of the biggest contiguous block of free memory starting from offs.
-     * @pre offs must not point into allocated memory.
-     */
-    std::size_t getFreeMemoryContiguous(std::size_t offs) const noexcept
-    {
-        std::byte* offs_ptr = (m_storage->get() + offs);
-        std::byte* bottom_ptr = reinterpret_cast<std::byte*>(m_bottomHeader);
-        if(bottom_ptr < offs_ptr) {
-            // linear case: free space from offset to end of storage
-            return m_storage->size() - offs;
-        } else {
-            // wrap-around case: free space from offset to bottom header
-            return bottom_ptr - offs_ptr;
-        }
     }
 };
 }
