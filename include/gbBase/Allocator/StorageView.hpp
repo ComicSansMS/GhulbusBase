@@ -16,7 +16,7 @@ namespace Allocator
 {
 /** Non-owning view on a region of memory used by an allocation strategy.
  * This class is used for interop between different storages to allocator strategies.
- * Each allocation strategy accepts any kind of storage as a constructor argument and
+ * Each AllocationStrategy accepts any kind of Storage as a constructor argument and
  * then attempts to obtain a view on it by calling makeStorageView().
  */
 struct StorageView
@@ -26,8 +26,8 @@ struct StorageView
 };
 
 /** Build a StorageView from a storage type.
- * An allocation strategy makes an unqualified call to makeStorageView to obtain
- * a view on the storage it is passed in its constructor. When using a custom
+ * An AllocationStrategy makes an unqualified call to makeStorageView to obtain
+ * a view on the Storage it is passed in its constructor. When using a custom
  * storage type, an overload of this function can be found through ADL.
  */
 template<typename Storage_T>

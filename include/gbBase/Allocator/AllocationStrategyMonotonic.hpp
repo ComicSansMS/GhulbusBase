@@ -39,9 +39,13 @@ namespace AllocationStrategy
  * +-------------------------------------------------------------------------------------------------------+
  * ^          ^                            ^                ^
  * p1         p2                           p3               |
- * m_storage.get()                             m_storage.get() + m_offset
+ * m_storage.ptr                                          m_offset
  * </pre>
  *
+ * Once the m_offset has been moved to the right, there is no way of moving it back to the left, unless
+ * the strategy is reset() completely.
+ *
+ * @tparam Debug_T One of the DebugPolicy policies.
  */
 template<typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Monotonic : private Debug_T {
@@ -49,16 +53,13 @@ private:
     StorageView m_storage;
     std::size_t m_offset;
 public:
+    /** @tparam Storage_T A Storage type that can be used as an argument to makeStorageView().
+     */
     template<typename Storage_T>
     explicit Monotonic(Storage_T& storage) noexcept
         :m_storage(makeStorageView(storage)), m_offset(0)
     {}
 
-    /** Allocate a region of n bytes starting at an address with the specified alignment.
-     * It is up to the enclosing allocator to ensure that n and alignment are big enough to hold the requested type.
-     * In particular, when allocating memory for an array of elements, n must consider the padding between elements
-     * to fulfill the alignment requirements for each individual element.
-     */
     std::byte* allocate(std::size_t n, std::size_t alignment)
     {
         n = std::max(n, std::size_t(1));

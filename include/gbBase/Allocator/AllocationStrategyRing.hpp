@@ -104,6 +104,8 @@ namespace AllocationStrategy
  *    it no longer points to a header that is marked free.
  *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered
  *    from the top, or to the beginning of the storage if no more headers remain.
+ *
+ * @tparam Debug_T One of the DebugPolicy policies.
  */
 template<typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Ring : private Debug_T {
@@ -182,6 +184,8 @@ private:
     std::size_t m_freeMemoryOffset;         ///< Offset to the start of the free memory region in bytes
 
 public:
+    /** @tparam Storage_T A Storage type that can be used as an argument to makeStorageView().
+    */
     template<typename Storage_T>
     explicit Ring(Storage_T& storage) noexcept
         :m_storage(makeStorageView(storage)), m_topHeader(nullptr), m_bottomHeader(nullptr), m_freeMemoryOffset(0)

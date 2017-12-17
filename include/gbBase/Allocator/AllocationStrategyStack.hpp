@@ -67,6 +67,7 @@ namespace AllocationStrategy
  *    it no longer points to a header that is marked free.
  *  - The m_freeMemoryOffset will point to the beginning of the last free header encountered.
  *
+ * @tparam Debug_T One of the DebugPolicy policies.
  */
 template<typename Debug_T = Allocator::DebugPolicy::AllocateDeallocateCounter>
 class Stack : private Debug_T {
@@ -115,6 +116,8 @@ private:
     Header* m_topHeader;                ///< Header of the top-most allocation.
     std::size_t m_freeMemoryOffset;     ///< Offset to the start of the free memory region in bytes.
 public:
+    /** @tparam Storage_T A Storage type that can be used as an argument to makeStorageView().
+    */
     template<typename Storage_T>
     explicit Stack(Storage_T& storage) noexcept
         :m_storage(makeStorageView(storage)), m_topHeader(nullptr), m_freeMemoryOffset(0)
