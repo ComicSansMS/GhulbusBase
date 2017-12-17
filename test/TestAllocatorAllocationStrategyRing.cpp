@@ -85,17 +85,17 @@ TEST_CASE("Ring Allocation Strategy")
 
         CHECK(ring.getFreeMemoryOffset() == 0);
         auto* const p1 = ring.allocate(64, 1);
-        CHECK(p1 == ptr + sizeof(Header));              // p1 [0 .. 88]
-        auto* const p2 = ring.allocate(16, 1);
-        CHECK(p2 == ptr + 2*sizeof(Header) + 64);       // p2 [88 .. 128]
+        CHECK(p1 == ptr + sizeof(Header));              // p1 [0 .. 80]
+        auto* const p2 = ring.allocate(32, 1);
+        CHECK(p2 == ptr + 2*sizeof(Header) + 64);       // p2 [80 .. 128]
 
         CHECK_THROWS_AS(ring.allocate(16, 1), std::bad_alloc);
         ring.deallocate(p1, 64);
         auto* const p3 = ring.allocate(16, 1);
-        CHECK(p3 == ptr + sizeof(Header));              // p3 [0 .. 40]
-
-        auto* const p4 = ring.allocate(16, 1);
-        CHECK(p4 == ptr + 2*sizeof(Header) + 16);       // p4 [40 .. 80]
+        CHECK(p3 == ptr + sizeof(Header));              // p3 [0 .. 32]
+        
+        auto* const p4 = ring.allocate(32, 1);
+        CHECK(p4 == ptr + 2*sizeof(Header) + 16);       // p4 [32 .. 80]
 
         CHECK_THROWS_AS(ring.allocate(1, 1), std::bad_alloc);
 
@@ -103,9 +103,9 @@ TEST_CASE("Ring Allocation Strategy")
         CHECK_THROWS_AS(ring.allocate(1, 1), std::bad_alloc);
 
         ring.deallocate(p2, 16);
-        CHECK_THROWS_AS(ring.allocate(25, 1), std::bad_alloc);
-        auto* const p5 = ring.allocate(24, 1);
-        CHECK(p5 == ptr + 3*sizeof(Header) + 32);       // p5 [80 .. 128]
+        CHECK_THROWS_AS(ring.allocate(33, 1), std::bad_alloc);
+        auto* const p5 = ring.allocate(32, 1);
+        CHECK(p5 == ptr + 3*sizeof(Header) + 48);       // p5 [80 .. 128]
 
         CHECK_THROWS_AS(ring.allocate(17, 1), std::bad_alloc);
         auto* const p6 = ring.allocate(16, 1);

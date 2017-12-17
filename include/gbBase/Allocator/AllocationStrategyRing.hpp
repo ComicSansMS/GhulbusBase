@@ -14,6 +14,7 @@
 #include <gbBase/Assert.hpp>
 
 #include <cstddef>
+#include <cstring>
 #include <limits>
 #include <memory>
 #include <new>
@@ -35,52 +36,58 @@ public:
      */
     class Header {
     private:
-        Header* m_nextHeader;           ///< Pointer to the next header in the list.
-        Header* m_previousHeader;       ///< Pointer to the previous header in the list.
-        bool m_wasFreed;
-
+        std::uintptr_t m_data[2];
     public:
-
         Header(Header* previous_header)
-            :m_nextHeader(nullptr), m_previousHeader(previous_header), m_wasFreed(false)
-        {}
+        {
+            static_assert(sizeof(Header*) == sizeof(std::uintptr_t));
+            static_assert(alignof(Header) >= 2);
+            m_data[0] = 0;
+            std::memcpy(&m_data[1], &previous_header, sizeof(Header*));
+        }
 
         void setNextHeader(Header* header)
         {
-            GHULBUS_PRECONDITION_DBG(header && !m_nextHeader);
-            m_nextHeader = header;
+            GHULBUS_PRECONDITION_DBG(header && !m_data[0]);
+            std::memcpy(&m_data, &header, sizeof(Header*));
         }
 
         void clearPreviousHeader()
         {
-            GHULBUS_PRECONDITION_DBG(m_previousHeader);
-            m_previousHeader = nullptr;
+            GHULBUS_PRECONDITION_DBG((m_data[1] & ~(std::uintptr_t(0x01) )) != 0);
+            std::uintptr_t const tmp = (m_data[1] & 0x01);
+            std::memcpy(&m_data[1], &tmp, sizeof(Header*));
         }
 
         void clearNextHeader()
         {
-            GHULBUS_PRECONDITION_DBG(m_nextHeader);
-            m_nextHeader = nullptr;
+            GHULBUS_PRECONDITION_DBG(m_data[0] != 0);
+            m_data[0] = 0;
         }
 
         Header* nextHeader() const
         {
-            return m_nextHeader;
+            Header* ret;
+            std::memcpy(&ret, &m_data, sizeof(Header*));
+            return ret;
         }
 
         Header* previousHeader() const
         {
-            return m_previousHeader;
+            std::uintptr_t const tmp = m_data[1] & ~(std::uintptr_t(0x01));
+            Header* ret;
+            std::memcpy(&ret, &tmp, sizeof(Header*));
+            return ret;
         }
 
         void markFree()
         {
-            m_wasFreed = true;
+            m_data[1] |= 0x01;
         }
 
         bool wasFreed() const
         {
-            return m_wasFreed;
+            return ((m_data[1] & 0x01) != 0);
         }
     };
 private:
