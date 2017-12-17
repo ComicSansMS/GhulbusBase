@@ -71,10 +71,19 @@ TEST_CASE("Ring Allocation Strategy")
         Allocator::AllocationStrategy::Ring<MockDebugPolicy> ring(storage);
 
         CHECK(ring.getFreeMemoryOffset() == 0);
+        CHECK(MockDebugPolicy::number_on_allocate_calls == 0);
         auto const p1 = ring.allocate(16, 1);
+        CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
         CHECK(p1 == ptr + sizeof(Header));
         auto const p2 = ring.allocate(16, 1);
+        CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
         CHECK(p2 == ptr + 2*sizeof(Header) + 16);
+
+        CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
+        ring.deallocate(p1, 16);
+        CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
+        ring.deallocate(p2, 16);
+        CHECK(MockDebugPolicy::number_on_deallocate_calls == 2);
     }
 
     SECTION("Allocate exhaustive")
