@@ -61,6 +61,7 @@ endif()
 set(GB_BASE_ALLOCATOR_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyMonotonic.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyPool.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyRing.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyStack.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/DebugPolicy.hpp
@@ -91,6 +92,7 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestFinally.cpp
     ${GB_BASE_TEST_DIR}/TestAllocator.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyMonotonic.cpp
+    ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyPool.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyRing.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyStack.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorDebugPolicy.cpp

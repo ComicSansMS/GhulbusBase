@@ -69,4 +69,49 @@
       </Synthetic>
     </Expand>
   </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Pool&lt;*&gt;::Header">
+    <DisplayString>{{ isFree={((m_data &amp; 0x01) != 0)}, nextFree={(Header*)(m_data &amp; ~(uintptr_t(0x01)))} }}</DisplayString>
+    <Expand>
+      <Item Name="isFree">((m_data &amp; 0x01) != 0)</Item>
+      <Item Name="nextFreeHeader">(Header*)(m_data &amp; ~(uintptr_t(0x01)))</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Ghulbus::Allocator::AllocationStrategy::Pool&lt;*&gt;">
+    <DisplayString>blub</DisplayString>
+    <Expand>
+      <Item Name="storage">m_storage.ptr</Item>
+      <Item Name="total">m_storage.size</Item>
+      <Item Name="chunk size">m_chunkSize</Item>
+      <Item Name="first free">m_firstFree</Item>
+      <Synthetic Name="chunks">
+        <DisplayString>{{size = {m_storage.size / (m_chunkSize + sizeof(Header))}}}</DisplayString>
+        <Expand>
+          <CustomListItems>
+            <Variable Name="memBase" InitialValue="m_storage.ptr"/>
+            <Variable Name="chunkSize" InitialValue="m_chunkSize + sizeof(Header)"/>
+            <Variable Name="nChunks" InitialValue="m_storage.size / (m_chunkSize + sizeof(Header))"/>
+            <Variable Name="i" InitialValue="0"/>
+            <Variable Name="freeChunks" InitialValue="0"/>
+            <Loop Condition="i &lt; nChunks">
+              <Item Name="[{i}]">(Header*)(memBase + i*chunkSize)</Item>
+              <Exec Condition="(((Header*)(memBase + i*chunkSize))->m_data &amp; 0x01) != 0">++freeChunks</Exec>
+              <Exec>++i</Exec>
+            </Loop>
+            <Item Name="free">freeChunks</Item>
+          </CustomListItems>
+        </Expand>
+      </Synthetic>
+      <Synthetic Name="free chunks">
+        <Expand>
+          <LinkedListItems>
+            <HeadPointer>m_firstFree</HeadPointer>
+            <NextPointer>(Header*)(m_data &amp; ~(uintptr_t(0x01)))</NextPointer>
+            <ValueNode>this</ValueNode>
+          </LinkedListItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
 </AutoVisualizer>

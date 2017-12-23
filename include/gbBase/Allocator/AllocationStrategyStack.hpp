@@ -89,7 +89,7 @@ public:
         {
             static_assert(sizeof(Header*) == sizeof(std::uintptr_t));
             static_assert(alignof(Header) >= 2);
-            std::memcpy(&m_data, &previous_header, sizeof(std::intptr_t));
+            std::memcpy(&m_data, &previous_header, sizeof(std::uintptr_t));
         }
 
         Header* previousHeader() const

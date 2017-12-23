@@ -185,7 +185,7 @@ private:
 
 public:
     /** @tparam Storage_T A Storage type that can be used as an argument to makeStorageView().
-    */
+     */
     template<typename Storage_T>
     explicit Ring(Storage_T& storage) noexcept
         :m_storage(makeStorageView(storage)), m_topHeader(nullptr), m_bottomHeader(nullptr), m_freeMemoryOffset(0)
