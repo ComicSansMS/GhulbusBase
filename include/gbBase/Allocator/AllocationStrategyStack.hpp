@@ -85,7 +85,7 @@ public:
          */
         std::uintptr_t m_data;
     public:
-        Header(Header* previous_header)
+        explicit Header(Header* previous_header)
         {
             static_assert(sizeof(Header*) == sizeof(std::uintptr_t));
             static_assert(alignof(Header) >= 2);

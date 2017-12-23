@@ -200,4 +200,36 @@ TEST_CASE("Pool Allocation Strategy")
             pool.deallocate(ps[i], 1024);
         }
     }
+
+    SECTION("Storage alignment")
+    {
+        std::size_t constexpr chunk_size = 1024;
+        std::size_t constexpr storage_size = Alloc::calculateStorageSize(chunk_size, 10);
+        std::aligned_storage_t<storage_size, alignof(Header)> s;
+        std::byte* const ptr = reinterpret_cast<std::byte*>(&s);
+        storage.memory_ptr = ptr + 1;
+        storage.memory_size = storage_size;
+
+        {
+            Alloc pool(storage, 1024);
+            CHECK(pool.getNumberOfFreeChunks() == 9);
+            auto const p1 = pool.allocate(1024, 1);
+            CHECK(p1 == ptr + alignof(Header) + sizeof(Header));
+            pool.deallocate(p1, 1024);
+        }
+
+        {
+            storage.memory_size = 1024;
+            Alloc pool(storage, 1024 - sizeof(Header));
+            CHECK(pool.getNumberOfFreeChunks() == 0);
+        }
+        {
+            storage.memory_ptr = ptr;
+            Alloc pool(storage, 1024 - sizeof(Header));
+            CHECK(pool.getNumberOfFreeChunks() == 1);
+            auto const p1 = pool.allocate(1024 - sizeof(Header), 1);
+            CHECK(p1 == ptr + sizeof(Header));
+            pool.deallocate(p1, 1024 - sizeof(Header));
+        }
+    }
 }
