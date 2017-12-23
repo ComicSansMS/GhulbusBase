@@ -14,6 +14,7 @@ TEST_CASE("Monotonic Allocation Strategy")
 
     MockStorage storage;
 
+    using DebugPol = Allocator::DebugPolicy::CombinedPolicy<Allocator::DebugPolicy::DebugHeap, MockDebugPolicy>;
     MockDebugPolicy::number_on_allocate_calls = 0;
     MockDebugPolicy::number_on_deallocate_calls = 0;
     MockDebugPolicy::number_on_reset_calls = 0;
@@ -21,35 +22,35 @@ TEST_CASE("Monotonic Allocation Strategy")
     SECTION("Size")
     {
         storage.memory_size = 42;
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
         CHECK(monot.getFreeMemory() == 42);
     }
 
     SECTION("Allocate")
     {
-        std::byte x;
+        std::byte x[42];
         storage.memory_size = 42;
-        storage.memory_ptr = &x;
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        storage.memory_ptr = x;
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
         CHECK(MockDebugPolicy::number_on_allocate_calls == 0);
-        CHECK(monot.allocate(1, 1) == &x);
+        CHECK(monot.allocate(1, 1) == x);
         CHECK(monot.getFreeMemory() == 41);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
-        CHECK(monot.allocate(1, 1) == &x + 1);
+        CHECK(monot.allocate(1, 1) == x + 1);
         CHECK(monot.getFreeMemory() == 40);
         CHECK(MockDebugPolicy::number_on_allocate_calls == 2);
     }
 
     SECTION("Allocate out of memory")
     {
-        std::byte x;
+        std::byte x[4];
         storage.memory_size = 4;
-        storage.memory_ptr = &x;
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        storage.memory_ptr = x;
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
-        CHECK(monot.allocate(1, 1) == &x);
+        CHECK(monot.allocate(1, 1) == x);
 
         CHECK(MockDebugPolicy::number_on_allocate_calls == 1);
         CHECK(monot.getFreeMemory() == 3);
@@ -63,7 +64,7 @@ TEST_CASE("Monotonic Allocation Strategy")
         std::aligned_storage_t<64> as;
         storage.memory_size = 64;
         storage.memory_ptr = reinterpret_cast<std::byte*>(&as);
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
         CHECK(monot.allocate(1, 1) == reinterpret_cast<std::byte*>(&as));
         CHECK(monot.allocate(1, 4) == reinterpret_cast<std::byte*>(&as) + 4);
@@ -79,7 +80,7 @@ TEST_CASE("Monotonic Allocation Strategy")
         std::aligned_storage_t<8> as;
         storage.memory_size = 8;
         storage.memory_ptr = reinterpret_cast<std::byte*>(&as);
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
         CHECK(monot.allocate(5, 1) == reinterpret_cast<std::byte*>(&as));
         CHECK_THROWS_AS(monot.allocate(1, 4), std::bad_alloc);
@@ -87,21 +88,21 @@ TEST_CASE("Monotonic Allocation Strategy")
 
     SECTION("Deallocate")
     {
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
-        std::byte x;
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
+        std::byte x[42];
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
-        monot.deallocate(&x, 42);
+        monot.deallocate(x, 42);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 1);
     }
 
     SECTION("Reset")
     {
-        std::byte x;
+        std::byte x[42];
         storage.memory_size = 42;
-        storage.memory_ptr = &x;
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        storage.memory_ptr = x;
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
-        CHECK(monot.allocate(1, 1) == &x);
+        CHECK(monot.allocate(1, 1) == x);
         CHECK(monot.getFreeMemory() == 41);
 
         CHECK(MockDebugPolicy::number_on_reset_calls == 0);
@@ -110,7 +111,7 @@ TEST_CASE("Monotonic Allocation Strategy")
 
         CHECK(monot.getFreeMemory() == 42);
         CHECK(MockDebugPolicy::number_on_deallocate_calls == 0);
-        CHECK(monot.allocate(1, 1) == &x);
+        CHECK(monot.allocate(1, 1) == x);
     }
 
     SECTION("Exhaust memory")
@@ -118,7 +119,7 @@ TEST_CASE("Monotonic Allocation Strategy")
         std::aligned_storage_t<8> as;
         storage.memory_size = 8;
         storage.memory_ptr = reinterpret_cast<std::byte*>(&as);
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
         auto p1 = monot.allocate(7, 1);
         CHECK(monot.getFreeMemory() == 1);
@@ -135,7 +136,7 @@ TEST_CASE("Monotonic Allocation Strategy")
         std::aligned_storage_t<9> as;
         storage.memory_size = 9;
         storage.memory_ptr = reinterpret_cast<std::byte*>(&as);
-        Allocator::AllocationStrategy::Monotonic<MockDebugPolicy> monot(storage);
+        Allocator::AllocationStrategy::Monotonic<DebugPol> monot(storage);
 
         auto p1 = monot.allocate(4, 1);
         CHECK(monot.getFreeMemory() == 5);
