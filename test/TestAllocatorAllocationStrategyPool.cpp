@@ -231,5 +231,24 @@ TEST_CASE("Pool Allocation Strategy")
             CHECK(p1 == ptr + sizeof(Header));
             pool.deallocate(p1, 1024 - sizeof(Header));
         }
+
+        {
+            storage.memory_ptr = ptr + 1;
+            storage.memory_size = sizeof(Header) + alignof(Header) - 2;
+            CHECK_THROWS_AS(Alloc(storage, 1), std::bad_alloc);
+            storage.memory_size = sizeof(Header) + alignof(Header) - 1;
+            {
+                Alloc pool(storage, 1);
+                CHECK(pool.getNumberOfFreeChunks() == 0);
+            }
+            storage.memory_size = sizeof(Header) + alignof(Header);
+            {
+                Alloc pool(storage, 1);
+                CHECK(pool.getNumberOfFreeChunks() == 1);
+                auto const p1 = pool.allocate(1, 1);
+                CHECK_THROWS_AS(pool.allocate(1, 1), std::bad_alloc);
+                pool.deallocate(p1, 1);
+            }
+        }
     }
 }

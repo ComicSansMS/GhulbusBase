@@ -143,7 +143,7 @@ public:
         :m_storage(makeStorageView(storage)), m_chunkSize(chunk_size)
     {
         void* ptr = reinterpret_cast<void*>(m_storage.ptr);
-        if(!std::align(alignof(Header), 1, ptr, m_storage.size)) {
+        if(!std::align(alignof(Header), sizeof(Header), ptr, m_storage.size)) {
             throw std::bad_alloc();
         }
         m_storage.ptr = reinterpret_cast<std::byte*>(ptr);
