@@ -10,9 +10,9 @@ void checkExpectations()
 {
     using namespace GHULBUS_BASE_NAMESPACE;
     // default log handler is logToCout
-    auto handler = Log::getLogHandler().target<decltype(&Log::Handlers::logToCout)>();
+    auto handler = *Log::getLogHandler().target<decltype(&Log::Handlers::logToCout)>();
     REQUIRE(handler);
-    CHECK(*handler == &Log::Handlers::logToCout);
+    CHECK(handler == &Log::Handlers::logToCout);
 
     // default log level is error
     CHECK(Log::getLogLevel() == LogLevel::Error);
@@ -49,9 +49,9 @@ TEST_CASE("TestLog")
     SECTION("Setting log handler")
     {
         Log::setLogHandler(testHandler);
-        auto handler = Log::getLogHandler().target<decltype(&testHandler)>();
+        auto handler = *Log::getLogHandler().target<decltype(&testHandler)>();
         REQUIRE(handler);
-        CHECK(*handler == &testHandler);
+        CHECK(handler == &testHandler);
         Log::setLogHandler(Log::LogHandler());
         CHECK(!Log::getLogHandler());
     }
