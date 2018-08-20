@@ -33,6 +33,10 @@ public:
 
     Finalizer(Finalizer const&) = delete;
     Finalizer& operator=(Finalizer const&) = delete;
+    /* Even though move assignment could technically be implemented here, it does not make sense
+     * for the intended use cases of finally(), so we delete it as well.
+     */
+    Finalizer& operator=(Finalizer&&) = delete;
 
     /** Defusing a Finalizer will prevent it from invoking the finalize function upon destruction.
      */

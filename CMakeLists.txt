@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 2.12)
+    cmake_policy(SET CMP0074 NEW)
+endif()
 
 project(GhulbusBase)
 
@@ -125,6 +128,7 @@ else()
     target_link_libraries(gbBase PUBLIC Threads::Threads)
 endif()
 target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
+target_compile_definitions(gbBase PUBLIC $<$<CXX_COMPILER_ID:MSVC>:_ENABLE_EXTENDED_ALIGNED_STORAGE>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
 target_compile_options(gbBase PRIVATE

@@ -68,6 +68,23 @@ TEST_CASE("Finalizer")
         }
         CHECK(!was_invoked);
     }
+
+    SECTION("Passing through functions")
+    {
+        bool was_invoked = false;
+        {
+            auto outer = [&was_invoked]() {
+                return [&was_invoked]() {
+                    return [&was_invoked]() {
+                        auto const finalize_func = [&was_invoked]() { was_invoked = true; };
+                        return Finalizer<decltype(finalize_func)>(finalize_func);
+                    }();
+                }();
+            }();
+            CHECK(!was_invoked);
+        }
+        CHECK(was_invoked);
+    }
 }
 
 struct FinallyTester {
