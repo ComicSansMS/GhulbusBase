@@ -79,7 +79,6 @@
   </Type>
 
   <Type Name="Ghulbus::Allocator::AllocationStrategy::Pool&lt;*&gt;">
-    <DisplayString>blub</DisplayString>
     <Expand>
       <Item Name="storage">m_storage.ptr</Item>
       <Item Name="total">m_storage.size</Item>
