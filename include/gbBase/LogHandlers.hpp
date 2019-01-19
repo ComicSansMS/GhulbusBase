@@ -38,7 +38,7 @@ GHULBUS_BASE_API void logToCout(LogLevel log_level, std::stringstream&& log_stre
 
 #ifdef WIN32
 /** Logs to an attached debugger via the OutputDebugString() Win32 API function.
-*/
+ */
 GHULBUS_BASE_API void logToWindowsDebugger(LogLevel log_level, std::stringstream&& log_stream);
 #endif
 
@@ -169,8 +169,9 @@ private:
     LogHandler m_downstreamHandlers[2];
 public:
     /** Adapting Constructor.
+     * Neither of the downstream handlers shall be empty.
      * @param[in] first_downstream_handler The first log handler that is to be wrapped.
-     * @param[in] first_downstream_handler The second log handler that is to be wrapped.
+     * @param[in] second_downstream_handler The second log handler that is to be wrapped.
      */
     GHULBUS_BASE_API LogMultiSink(LogHandler first_downstream_handler,
                                   LogHandler second_downstream_handler);
