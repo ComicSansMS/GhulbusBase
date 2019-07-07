@@ -74,12 +74,12 @@ public:
     /** Retrieve an element from the front of the ring buffer.
      * \pre !empty()
      */
-    reference pop_front()
+    value_type pop_front()
     {
         GHULBUS_PRECONDITION(!empty());
         auto const front_idx = front_index();
         --m_n_elements;
-        return m_ring[front_idx];
+        return std::move(m_ring[front_idx]);
     }
 
     /** Maximum number of elements that the ring buffer can hold at once.
