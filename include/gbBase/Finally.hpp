@@ -9,6 +9,7 @@
 
 #include <gbBase/config.hpp>
 
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -44,6 +45,66 @@ public:
 private:
     F m_finalizer;
     bool m_invoke;
+};
+
+/** Type-erased wrapper for Finalizer types.
+ */
+class AnyFinalizer {
+public:
+    /** Constructs an empty wrapper.
+     */
+    AnyFinalizer() noexcept = default;
+
+    /** Constructs a wrapper containing Finalizer f.
+     */
+    template<class F>
+    AnyFinalizer(Finalizer<F>&& f)
+        :m_finalizer(std::make_unique<Model<F>>(std::move(f)))
+    {}
+
+    ~AnyFinalizer() noexcept = default;
+
+    AnyFinalizer(AnyFinalizer&& rhs) = default;
+    AnyFinalizer& operator=(AnyFinalizer&& rhs) = default;
+
+    AnyFinalizer(AnyFinalizer const&) = delete;
+    AnyFinalizer& operator=(AnyFinalizer const&) = delete;
+
+    /** Checks if the wrapper is currently empty.
+     */
+    operator bool() const noexcept {
+        return m_finalizer.operator bool();
+    }
+
+    /** Invokes defuse on the contained Finalizer.
+     * \pre The wrapper must not be empty.
+     */
+    void defuse() noexcept
+    {
+        m_finalizer->defuse();
+    }
+private:
+    struct Concept {
+        virtual ~Concept() = default;
+        virtual void defuse() noexcept = 0;
+    };
+
+    template<class F>
+    struct Model : Concept {
+        Finalizer<F> finalizer_;
+
+        Model(Finalizer<F>&& f)
+            :finalizer_(std::move(f))
+        {}
+
+        ~Model() override = default;
+
+        void defuse() noexcept override {
+            finalizer_.defuse();
+        }
+    };
+
+    std::unique_ptr<Concept> m_finalizer;
 };
 
 /** Constructs a Finalizer to invoke code at the end of scope.

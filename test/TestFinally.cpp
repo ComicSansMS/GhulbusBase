@@ -13,77 +13,138 @@ TEST_CASE("Finalizer")
 
     SECTION("Destruction invokes finalize function")
     {
-        bool was_invoked = false;
-        auto const finalize_func = [&was_invoked]() { was_invoked = true; };
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
         {
             Finalizer<decltype(finalize_func)> f(finalize_func);
-            CHECK(!was_invoked);
+            CHECK(was_invoked == 0);
         }
-        CHECK(was_invoked);
+        CHECK(was_invoked == 1);
     }
 
     SECTION("Move construction")
     {
-        bool was_invoked = false;
-        auto const finalize_func = [&was_invoked]() { was_invoked = true; };
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
         {
             std::unique_ptr<Finalizer<decltype(finalize_func)>> move_to(nullptr);
             {
                 Finalizer<decltype(finalize_func)> f(finalize_func);
-                CHECK(!was_invoked);
+                CHECK(was_invoked == 0);
                 move_to.reset(new decltype(f)(std::move(f)));
-                CHECK(!was_invoked);
+                CHECK(was_invoked == 0);
             }
-            CHECK(!was_invoked);
+            CHECK(was_invoked == 0);
         }
-        CHECK(was_invoked);
+        CHECK(was_invoked == 1);
     }
 
     SECTION("Defusing")
     {
-        bool was_invoked = false;
-        auto const finalize_func = [&was_invoked]() { was_invoked = true; };
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
         {
             Finalizer<decltype(finalize_func)> f(finalize_func);
-            CHECK(!was_invoked);
+            CHECK(was_invoked == 0);
             f.defuse();
         }
-        CHECK(!was_invoked);
+        CHECK(was_invoked == 0);
     }
 
     SECTION("Moving from defused")
     {
-        bool was_invoked = false;
-        auto const finalize_func = [&was_invoked]() { was_invoked = true; };
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
         {
             std::unique_ptr<Finalizer<decltype(finalize_func)>> move_to(nullptr);
             {
                 Finalizer<decltype(finalize_func)> f(finalize_func);
-                CHECK(!was_invoked);
+                CHECK(was_invoked == 0);
                 f.defuse();
                 move_to.reset(new decltype(f)(std::move(f)));
-                CHECK(!was_invoked);
+                CHECK(was_invoked == 0);
             }
-            CHECK(!was_invoked);
+            CHECK(was_invoked == 0);
         }
-        CHECK(!was_invoked);
+        CHECK(was_invoked == 0);
     }
 
     SECTION("Passing through functions")
     {
-        bool was_invoked = false;
+        int was_invoked = 0;
         {
             auto outer = [&was_invoked]() {
                 return [&was_invoked]() {
                     return [&was_invoked]() {
-                        auto const finalize_func = [&was_invoked]() { was_invoked = true; };
+                        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
                         return Finalizer<decltype(finalize_func)>(finalize_func);
                     }();
                 }();
             }();
-            CHECK(!was_invoked);
+            CHECK(was_invoked == 0);
         }
-        CHECK(was_invoked);
+        CHECK(was_invoked == 1);
+    }
+}
+
+TEST_CASE("AnyFinalizer")
+{
+    using namespace GHULBUS_BASE_NAMESPACE;
+
+    SECTION("Default construction")
+    {
+        AnyFinalizer af;
+        CHECK(!af);
+    }
+
+    SECTION("Move construction")
+    {
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
+        {
+            AnyFinalizer af;
+            {
+                Finalizer<decltype(finalize_func)> f(finalize_func);
+                af = std::move(f);
+            }
+            CHECK(af);
+            CHECK(was_invoked == 0);
+        }
+        CHECK(was_invoked == 1);
+    }
+
+    SECTION("Move assignment")
+    {
+        int was_invoked_0 = 0;
+        auto const finalize_func_0 = [&was_invoked_0]() { ++was_invoked_0; };
+        int was_invoked_1 = 0;
+        auto const finalize_func_1 = [&was_invoked_1]() { ++was_invoked_1; };
+        {
+            AnyFinalizer af(Finalizer<decltype(finalize_func_0)>{finalize_func_0});
+            {
+                AnyFinalizer af_inner{ Finalizer<decltype(finalize_func_1)>{finalize_func_1} };
+                CHECK(was_invoked_0 == 0);
+                CHECK(was_invoked_1 == 0);
+                af = std::move(af_inner);
+                CHECK(was_invoked_0 == 1);
+                CHECK(was_invoked_1 == 0);
+                CHECK(!af_inner);
+            }
+            CHECK(was_invoked_1 == 0);
+        }
+        CHECK(was_invoked_1 == 1);
+    }
+
+    SECTION("Defusing")
+    {
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
+        {
+            AnyFinalizer af{ Finalizer<decltype(finalize_func)>(finalize_func) };;
+            CHECK(was_invoked == 0);
+            af.defuse();
+        }
+        CHECK(was_invoked == 0);
     }
 }
 
