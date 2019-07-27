@@ -97,7 +97,7 @@ TEST_CASE("AnyFinalizer")
         CHECK(!af);
     }
 
-    SECTION("Move construction")
+    SECTION("Construction from Finalizer")
     {
         int was_invoked = 0;
         auto const finalize_func = [&was_invoked]() { ++was_invoked; };
@@ -108,6 +108,23 @@ TEST_CASE("AnyFinalizer")
                 af = std::move(f);
             }
             CHECK(af);
+            CHECK(was_invoked == 0);
+        }
+        CHECK(was_invoked == 1);
+    }
+
+    SECTION("Move construction")
+    {
+        int was_invoked = 0;
+        auto const finalize_func = [&was_invoked]() { ++was_invoked; };
+        {
+            std::unique_ptr<AnyFinalizer> af_outer;
+            {
+                AnyFinalizer af{ Finalizer<decltype(finalize_func)>(finalize_func) };
+                CHECK(af);
+                af_outer = std::make_unique<AnyFinalizer>(std::move(af));
+                CHECK(!af);
+            }
             CHECK(was_invoked == 0);
         }
         CHECK(was_invoked == 1);
