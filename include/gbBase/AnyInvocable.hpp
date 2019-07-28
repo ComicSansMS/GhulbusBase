@@ -25,12 +25,12 @@ private:
     class Concept {
     public:
         virtual ~Concept() = default;
-        virtual T_Return invoke(T_Args... args) = 0;
+        virtual T_Return invoke(T_Args... args) const = 0;
     };
 
     template<typename F>
     class Model : public Concept {
-        F f;
+        mutable F f;
     public:
         Model(F&& nf)
             :f(std::move(nf))
@@ -38,7 +38,7 @@ private:
 
         ~Model() override = default;
 
-        T_Return invoke(T_Args... args) override {
+        T_Return invoke(T_Args... args) const override {
             return std::invoke(f, std::forward<T_Args>(args)...);
         }
     };
@@ -48,7 +48,7 @@ public:
         :m_ptr(std::make_unique<Model<Func>>(std::move(f)))
     {}
 
-    T_Return operator()(T_Args... args)
+    T_Return operator()(T_Args... args) const
     {
         return m_ptr->invoke(std::forward<T_Args>(args)...);
     }
