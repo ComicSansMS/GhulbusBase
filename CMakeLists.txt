@@ -199,6 +199,7 @@ if(GB_BUILD_TESTS)
     target_link_libraries(gbBase_Test PUBLIC gbBase Catch)
     target_include_directories(gbBase_Test PUBLIC ${GB_BASE_TEST_DIR})
     target_compile_definitions(gbBase_Test PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
+    target_compile_definitions(gbBase_Test PUBLIC $<$<CXX_COMPILER_ID:MSVC>:_ENABLE_EXTENDED_ALIGNED_STORAGE>)
     add_test(NAME TestBase COMMAND gbBase_Test)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
