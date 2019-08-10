@@ -61,7 +61,7 @@ public:
      *      that has not yet been deallocated.
      */
     void deallocate(T* p, std::size_t n) {
-        return m_state->deallocate(reinterpret_cast<std::byte*>(p), n);
+        return m_state->deallocate(reinterpret_cast<std::byte*>(p), sizeof(T)*n);
     }
 
     /** Retrieve a pointer to the underlying AllocationStrategy.

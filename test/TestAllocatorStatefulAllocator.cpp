@@ -178,6 +178,6 @@ TEST_CASE("Stateful Allocator")
         alloc.deallocate(&x, 42);
         CHECK(state.number_deallocate_calls == 1);
         CHECK(state.last_deallocate_call.p == reinterpret_cast<std::byte*>(&x));
-        CHECK(state.last_deallocate_call.n == 42);
+        CHECK(state.last_deallocate_call.n == 42*sizeof(double));
     }
 }
