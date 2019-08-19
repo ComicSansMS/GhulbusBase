@@ -29,6 +29,15 @@ TEST_CASE("Exception")
         CHECK(*info == testtext);
     }
 
+    SECTION("Exception decorating through decorate_exception")
+    {
+        std::string testtext("Lorem ipsum");
+        auto const e = decorate_exception(Exceptions::NotImplemented(), Exception_Info::description(testtext));
+        auto const info = boost::get_error_info<Exception_Info::description>(e);
+        REQUIRE(info);
+        CHECK(*info == testtext);
+    }
+
     SECTION("Exceptions can be caught as std exceptions")
     {
         auto tester = [](auto the_exception) {

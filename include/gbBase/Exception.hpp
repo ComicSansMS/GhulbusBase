@@ -82,6 +82,17 @@ namespace GHULBUS_BASE_NAMESPACE
         /// @}
     }
 
+    /** Helper function applying a variadic number of decorators to an exception.
+     * @param e An exception object.
+     * @param args The decorators that will be applied to the exception object e.
+     * @return A reference to the exception object e.
+     */
+    template<typename Exception_T, typename... ExceptionInfo_Ts>
+    auto decorate_exception(Exception_T const& e, ExceptionInfo_Ts const&... args)
+    {
+        return (e << ... << args);
+    }
+
     /** Concrete exception objects.
      */
     namespace Exceptions
