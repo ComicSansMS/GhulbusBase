@@ -28,9 +28,11 @@ public:
         : m_finalizer(std::move(f)), m_invoke(true) {}
 
     Finalizer(Finalizer&& rhs) noexcept
-        : m_finalizer(std::move(rhs.m_finalizer)), m_invoke(rhs.m_invoke) { rhs.m_invoke = false; }
+        : m_finalizer(std::move(rhs.m_finalizer)), m_invoke(rhs.m_invoke) {
+        rhs.m_invoke = false;
+    }
 
-    ~Finalizer() noexcept { if(m_invoke) { m_finalizer(); } }
+    ~Finalizer() noexcept { if (m_invoke) { m_finalizer(); } }
 
     Finalizer(Finalizer const&) = delete;
     Finalizer& operator=(Finalizer const&) = delete;
@@ -111,7 +113,7 @@ private:
  * @param[in] finalizer A Callable object. The returned Finalizer will invoke this upon destruction.
  */
 template<class F>
-inline auto finally(F&& finalizer) noexcept
+[[nodiscard]] inline auto finally(F&& finalizer) noexcept
 {
     using RemRef = typename std::remove_reference<F>::type;
     using RetParam = typename std::conditional<
