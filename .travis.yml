@@ -1,7 +1,7 @@
 
 language: cpp
 os: linux
-dist: trusty
+dist: bionic
 sudo: false
 
 compiler:
@@ -13,67 +13,59 @@ addons:
       - boost-latest
     packages:
     # compiler
-      - g++-7
-      - gcc-7
+      - cmake
+      - g++-8
+      - gcc-8
       - ninja-build
     # doc tools
       - doxygen
       - graphviz
       - mscgen
     # third-party dependencies
-      - libboost1.55-dev
-      - libboost-date-time1.55-dev
-      - libboost-thread1.55-dev
-      - libboost-wave1.55-dev
-      - libboost1.55-all-dev
+      - libboost-dev
+      - libboost-date-time-dev
+      - libboost-thread-dev
+      - libboost-wave-dev
+      - libboost-all-dev
 
 install:
-  - gcc-7 --version
-  # install CMake 3.10
-  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
-  - echo "020740ee9132f55aa529782ee9f578ec *cmake-3.10.0-Linux-x86_64.tar.gz" > cmake_md5.txt
-  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
-  - md5sum -c cmake_md5.txt
-  - tar -xvf cmake-3.10.0-Linux-x86_64.tar.gz > /dev/null
-  - mv cmake-3.10.0-Linux-x86_64 cmake-install
-  - PATH=${DEPS_DIR}/cmake-install:${DEPS_DIR}/cmake-install/bin:$PATH
-  - which cmake
+  - gcc --version
+  - cmake --version
 
 before_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - mkdir build-static-gcc7 && mkdir build-shared-gcc7 && mkdir build-bare-gcc7 && mkdir build-coverage-gcc7
-  - cd build-static-gcc7
-  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
+  - mkdir build-static-gcc && mkdir build-shared-gcc && mkdir build-bare-gcc && mkdir build-coverage-gcc
+  - cd build-static-gcc
+  - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
   - make
-  - cd ../build-shared-gcc7
-  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+  - cd ../build-shared-gcc
+  - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
   - make
-  - cd ../build-bare-gcc7
-  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
+  - cd ../build-bare-gcc
+  - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
   - make
-  - cd ../build-coverage-gcc7
-  - cmake -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-7 ..
+  - cd ../build-coverage-gcc
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-8 ..
   - make
   - cd ${TRAVIS_BUILD_DIR}
 
 script:
-  - cd build-static-gcc7
+  - cd build-static-gcc
   - make test
-  - cd ../build-shared-gcc7
+  - cd ../build-shared-gcc
   - make test
-  - cd ../build-bare-gcc7
+  - cd ../build-bare-gcc
   - make test
-  - cd ../build-coverage-gcc7
+  - cd ../build-coverage-gcc
   - make test
 
 after_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - cd build-static-gcc7
+  - cd build-static-gcc
   - make doxygen-doc
 
 after_success:
-  - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc7
+  - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc
   - make gbBase_TestCoverage
   - bash <(curl -s https://codecov.io/bash)
 

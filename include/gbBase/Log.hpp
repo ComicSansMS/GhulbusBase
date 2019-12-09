@@ -72,7 +72,7 @@ namespace Log
     /** A guard object for logging initialization.
      * An object of this class will invoke shutdownLogging() in its destructor.
      */
-    struct GHULBUS_BASE_API[[nodiscard]] LoggingInitializeGuard{
+    struct GHULBUS_BASE_API [[nodiscard]] LoggingInitializeGuard {
     private:
         bool m_doShutdown;
     public:
