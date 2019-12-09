@@ -88,6 +88,7 @@ if(NOT GB_BASE_BUILD_BARE)
         ${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
         ${GB_BASE_INCLUDE_DIR}/gbBase/Log.hpp
         ${GB_BASE_INCLUDE_DIR}/gbBase/LogHandlers.hpp
+        ${GB_BASE_INCLUDE_DIR}/gbBase/PerfLog.hpp
     )
 endif()
 
@@ -114,6 +115,7 @@ if(NOT GB_BASE_BUILD_BARE)
         ${GB_BASE_TEST_DIR}/TestException.cpp
         ${GB_BASE_TEST_DIR}/TestLog.cpp
         ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
+        ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
     )
 endif()
 
