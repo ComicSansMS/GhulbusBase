@@ -69,6 +69,37 @@ namespace Log
      */
     GHULBUS_BASE_API void shutdownLogging();
 
+    /** A guard object for logging initialization.
+     * An object of this class will invoke shutdownLogging() in its destructor.
+     */
+    struct GHULBUS_BASE_API[[nodiscard]] LoggingInitializeGuard{
+    private:
+        bool m_doShutdown;
+    public:
+        LoggingInitializeGuard()
+            :m_doShutdown(true)
+        {}
+
+        ~LoggingInitializeGuard() {
+            if (m_doShutdown) { shutdownLogging(); }
+        }
+
+        LoggingInitializeGuard(LoggingInitializeGuard const&) = delete;
+        LoggingInitializeGuard& operator=(LoggingInitializeGuard const&) = delete;
+
+        LoggingInitializeGuard(LoggingInitializeGuard&& rhs)
+            :m_doShutdown(rhs.m_doShutdown)
+        {
+            rhs.m_doShutdown = false;
+        }
+
+        LoggingInitializeGuard& operator=(LoggingInitializeGuard&& rhs) = delete;
+    };
+
+    /** The same as initializeLogging(), but returns a guard object that will automatically shutdown on destruction.
+     */
+    GHULBUS_BASE_API LoggingInitializeGuard initializeLoggingWithGuard();
+
     /** Set the system wide log level.
      * If a log message has a lower level than the system log level, it will not be evaluated by the GHULBUS_LOG
      * macro.

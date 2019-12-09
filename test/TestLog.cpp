@@ -44,6 +44,7 @@ TEST_CASE("TestLog")
         Log::initializeLogging();
         Log::shutdownLogging();
         Log::initializeLogging();
+        auto guard = Log::initializeLoggingWithGuard();
         Log::shutdownLogging();
         Log::shutdownLogging();
     }

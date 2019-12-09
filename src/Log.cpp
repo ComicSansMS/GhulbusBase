@@ -99,6 +99,12 @@ void shutdownLogging()
     --staticData.staticStorageRefcount;
 }
 
+LoggingInitializeGuard initializeLoggingWithGuard()
+{
+    initializeLogging();
+    return LoggingInitializeGuard{};
+}
+
 void setLogLevel(LogLevel log_level)
 {
     GHULBUS_ASSERT(log_level >= LogLevel::Trace && log_level <= LogLevel::Critical);
