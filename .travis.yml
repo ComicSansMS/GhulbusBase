@@ -8,9 +8,6 @@ compiler:
   - gcc
 addons:
   apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - boost-latest
     packages:
     # compiler
       - cmake
@@ -27,9 +24,14 @@ addons:
       - libboost-thread-dev
       - libboost-wave-dev
       - libboost-all-dev
+env:
+  - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && GCOV=gcov-8"
+
+before_install:
+  - eval "${MATRIX_EVAL}"
 
 install:
-  - gcc --version
+  - ${CXX} --version
   - cmake --version
 
 before_script:
@@ -45,7 +47,7 @@ before_script:
   - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
   - make
   - cd ../build-coverage-gcc
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=gcov-8 ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=${GCOV} ..
   - make
   - cd ${TRAVIS_BUILD_DIR}
 
