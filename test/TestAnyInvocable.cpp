@@ -48,6 +48,12 @@ TEST_CASE("AnyInvocable")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
 
+    SECTION("Defaul Construction")
+    {
+        AnyInvocable<void()> f;
+        CHECK(f.empty());
+    }
+
     SECTION("Construction from free function")
     {
         std::function<int()> ff;
@@ -94,6 +100,27 @@ TEST_CASE("AnyInvocable")
             CountCopies c;
             stdfunc(std::move(c));
         }
+    }
+
+    SECTION("Move Assignment")
+    {
+        Ghulbus::AnyInvocable<int()> func1([]() { return 42; });
+        Ghulbus::AnyInvocable<int()> func2([]() { return 0; });
+        CHECK(func2() == 0);
+        func2 = std::move(func1);
+        CHECK(func2() == 42);
+    }
+
+    SECTION("Empty")
+    {
+        Ghulbus::AnyInvocable<int()> func0;
+        CHECK(func0.empty());
+
+        Ghulbus::AnyInvocable<int()> func1([]() { return 42; });
+        Ghulbus::AnyInvocable<int()> func2([]() { return 0; });
+        CHECK(!func1.empty());
+        func2 = std::move(func1);
+        CHECK(func1.empty());
     }
 
     SECTION("Noexcept")

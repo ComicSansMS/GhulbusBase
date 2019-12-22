@@ -43,18 +43,24 @@ private:
         }
     };
 public:
+    AnyInvocable() noexcept = default;
+
     template<typename Func>
     AnyInvocable(Func f)
         :m_ptr(std::make_unique<Model<Func>>(std::move(f)))
     {}
 
     AnyInvocable(AnyInvocable&&) noexcept = default;
+    AnyInvocable& operator=(AnyInvocable&&) noexcept = default;
 
     T_Return operator()(T_Args... args) const
     {
         return m_ptr->invoke(std::forward<T_Args>(args)...);
     }
 
+    bool empty() const {
+        return !m_ptr;
+    }
 private:
     std::unique_ptr<Concept> m_ptr;
 };
