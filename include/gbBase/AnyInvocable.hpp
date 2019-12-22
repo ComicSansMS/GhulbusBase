@@ -32,7 +32,7 @@ private:
     class Model : public Concept {
         mutable F f;
     public:
-        Model(F&& nf)
+        Model(F&& nf) noexcept(std::is_nothrow_move_constructible_v<F>)
             :f(std::move(nf))
         {}
 
@@ -47,6 +47,8 @@ public:
     AnyInvocable(Func f)
         :m_ptr(std::make_unique<Model<Func>>(std::move(f)))
     {}
+
+    AnyInvocable(AnyInvocable&&) noexcept = default;
 
     T_Return operator()(T_Args... args) const
     {

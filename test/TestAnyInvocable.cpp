@@ -95,4 +95,11 @@ TEST_CASE("AnyInvocable")
             stdfunc(std::move(c));
         }
     }
+
+    SECTION("Noexcept")
+    {
+        Ghulbus::AnyInvocable<int()> func([]() { return 42; });
+        static_assert(std::is_nothrow_move_constructible_v<decltype(func)>,
+                      "Noexcept on move constructor is missing.");
+    }
 }
