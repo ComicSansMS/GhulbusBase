@@ -98,7 +98,7 @@ namespace GHULBUS_BASE_NAMESPACE
         std::string operator()(T const& v) {
             std::stringstream sstr;
             sstr << v;
-            return std::move(sstr.str());
+            return sstr.str();
         }
     };
 
