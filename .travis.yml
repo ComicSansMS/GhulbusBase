@@ -18,12 +18,6 @@ addons:
       - doxygen
       - graphviz
       - mscgen
-    # third-party dependencies
-      - libboost-dev
-      - libboost-date-time-dev
-      - libboost-thread-dev
-      - libboost-wave-dev
-      - libboost-all-dev
 env:
   - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && GCOV=gcov-8"
 
