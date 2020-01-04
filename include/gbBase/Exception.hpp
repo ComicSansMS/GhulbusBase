@@ -304,9 +304,9 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         /** A user-provided string describing the error.
          */
-        typedef ErrorInfo<Tags::location, Records::location> location;
-        typedef ErrorInfo<Tags::description, std::string> description;
-        typedef ErrorInfo<Tags::filename, std::string> filename;
+        using location = ErrorInfo<Tags::location, Records::location>;
+        using description = ErrorInfo<Tags::description, std::string>;
+        using filename = ErrorInfo<Tags::filename, std::string>;
         /// @}
     }
 

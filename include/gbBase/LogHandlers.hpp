@@ -114,7 +114,7 @@ public:
  */
 class LogAsync {
 private:
-    typedef std::tuple<LogLevel, std::stringstream> QueueElement;
+    using QueueElement = std::tuple<LogLevel, std::stringstream>;
 private:
     std::mutex m_mutex;                     ///< mutex protexting access to the m_queue
     std::deque<QueueElement> m_queue;       ///< queue of log messages

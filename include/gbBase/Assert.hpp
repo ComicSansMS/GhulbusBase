@@ -165,7 +165,7 @@ namespace GHULBUS_BASE_NAMESPACE
          * Assertion Handlers must not return to their caller once they have been invoked. If a handler does return,
          * assertionFailed() will call std::abort() to avoid further undefined behavior.
          */
-        typedef void(*Handler)(HandlerParameters const&);
+        using Handler = void(*)(HandlerParameters const&);
 
         /** Determine the behavior in case of failing assertions.
          * The default assertion handler is failAbort().

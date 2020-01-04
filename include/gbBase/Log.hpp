@@ -46,7 +46,7 @@ namespace Log
      * Setting an empty function as LogHandler is valid and will cause all log messages to be discarded.
      * @see setLogHandler() getLogHandler()
      */
-    typedef std::function<void(LogLevel, std::stringstream&&)> LogHandler;
+    using LogHandler = std::function<void(LogLevel, std::stringstream&&)>;
 
     /** Initialize the logging subsystem.
      * This function must be called before any other function from the Log namespace.
