@@ -2,14 +2,12 @@
 #include <gbBase/Assert.hpp>
 #include <gbBase/LogHandlers.hpp>
 
-#include <boost/predef.h>
-
-#if BOOST_COMP_MSVC
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4146 4244)
 #endif
 #include <hinnant_date/date.h>
-#if BOOST_COMP_MSVC
+#ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 

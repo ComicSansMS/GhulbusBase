@@ -37,13 +37,6 @@ set(GB_BASE_VERSION_MINOR 1)
 set(GB_BASE_VERSION_PATCH 0)
 set(GB_BASE_VERSION "${GB_BASE_VERSION_MAJOR}.${GB_BASE_VERSION_MINOR}.${GB_BASE_VERSION_PATCH}")
 
-option(GB_BASE_BUILD_BARE "Set this if you want to build without external dependencies; Some features will be disabled." OFF)
-
-if(NOT GB_BASE_BUILD_BARE)
-    set(Boost_USE_STATIC_LIBS ON)
-    find_package(Boost REQUIRED)
-endif()
-
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
@@ -53,13 +46,9 @@ set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 set(GB_BASE_SOURCE_FILES
     ${GB_BASE_SOURCE_DIR}/Assert.cpp
+    ${GB_BASE_SOURCE_DIR}/Log.cpp
+    ${GB_BASE_SOURCE_DIR}/LogHandlers.cpp
 )
-if(NOT GB_BASE_BUILD_BARE)
-    list(APPEND GB_BASE_SOURCE_FILES
-        ${GB_BASE_SOURCE_DIR}/Log.cpp
-        ${GB_BASE_SOURCE_DIR}/LogHandlers.cpp
-    )
-endif()
 
 set(GB_BASE_ALLOCATOR_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator.hpp
@@ -78,26 +67,26 @@ set(GB_BASE_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/AnyInvocable.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Finally.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/FixedRing.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/Log.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/LogHandlers.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/PerfLog.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
     ${GB_BASE_ALLOCATOR_HEADER_FILES}
 )
-if(NOT GB_BASE_BUILD_BARE)
-    list(APPEND GB_BASE_HEADER_FILES
-        ${GB_BASE_INCLUDE_DIR}/gbBase/Exception.hpp
-        ${GB_BASE_INCLUDE_DIR}/gbBase/Log.hpp
-        ${GB_BASE_INCLUDE_DIR}/gbBase/LogHandlers.hpp
-        ${GB_BASE_INCLUDE_DIR}/gbBase/PerfLog.hpp
-    )
-endif()
 
 set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestAnyInvocable.cpp
     ${GB_BASE_TEST_DIR}/TestAssert.cpp
     ${GB_BASE_TEST_DIR}/TestBase.cpp
+    ${GB_BASE_TEST_DIR}/TestException.cpp
     ${GB_BASE_TEST_DIR}/TestFinally.cpp
     ${GB_BASE_TEST_DIR}/TestFixedRing.cpp
+    ${GB_BASE_TEST_DIR}/TestLog.cpp
+    ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
+    ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
     ${GB_BASE_TEST_DIR}/TestAllocator.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyMonotonic.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyPool.cpp
@@ -110,29 +99,15 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/MockDebugPolicy.hpp
     ${GB_BASE_TEST_DIR}/MockStorage.hpp
 )
-if(NOT GB_BASE_BUILD_BARE)
-    list(APPEND GB_BASE_TEST_SOURCES
-        ${GB_BASE_TEST_DIR}/TestException.cpp
-        ${GB_BASE_TEST_DIR}/TestLog.cpp
-        ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
-        ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
-    )
-endif()
 
 add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
 target_compile_features(gbBase PRIVATE cxx_lambdas cxx_override cxx_range_for)
 target_compile_features(gbBase PUBLIC cxx_attributes cxx_func_identifier cxx_noexcept)
 target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}>)
-if(GB_BASE_BUILD_BARE)
-    target_compile_definitions(gbBase PUBLIC GHULBUS_CONFIG_BASE_BARE_BUILD)
-else()
-    target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${Boost_INCLUDE_DIR}>)
-    target_compile_definitions(gbBase PUBLIC BOOST_ALL_NO_LIB)
-    # TODO: using the imported target will break the INSTALL for static builds
-    #target_link_libraries(gbBase PRIVATE hinnant_date)
-    target_include_directories(gbBase PRIVATE ${PROJECT_SOURCE_DIR}/external/hinnant_date)
-    target_link_libraries(gbBase PUBLIC Threads::Threads)
-endif()
+# TODO: using the imported target will break the INSTALL for static builds
+#target_link_libraries(gbBase PRIVATE hinnant_date)
+target_include_directories(gbBase PRIVATE ${PROJECT_SOURCE_DIR}/external/hinnant_date)
+target_link_libraries(gbBase PUBLIC Threads::Threads)
 target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_definitions(gbBase PUBLIC $<$<CXX_COMPILER_ID:MSVC>:_ENABLE_EXTENDED_ALIGNED_STORAGE>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)

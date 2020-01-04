@@ -6,50 +6,267 @@
 * @brief Exception Base Class.
 * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
 */
-
 #include <gbBase/config.hpp>
 
-#include <boost/predef/compiler.h>
-
-#if !BOOST_COMP_MSVC
-/** @cond
- */
-namespace boost
-{
-    /* we need to declare error_info as export to allow rtti over shared library boundaries on gcc/clang.
-     * on the other hand, vc really doesn't like to see a definition for a dllimport class, hence the ifdef.
-     */
-    template <class Tag,class T> class GHULBUS_BASE_API error_info;
-}
-/** @endcond */
-#endif
-#include <boost/exception/all.hpp>
-
 #include <exception>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <typeinfo>
+#include <type_traits>
 
 namespace GHULBUS_BASE_NAMESPACE
 {
+    /** Decorator type.
+     * An exception type derived from `Exception` may have an arbitrary number of decorator types attached to it
+     * using `operator<<`. The data attached this way may then be retrieved from the exception object by
+     * calling `getErrorInfo()`.
+     */
+    template<typename Tag_T, typename T>
+    class GHULBUS_BASE_API ErrorInfo {
+    public:
+        using ValueType = T;
+        using TagType = Tag_T;
+    private:
+        T m_data;
+    public:
+        template<typename... Args>
+        ErrorInfo(Args&&... args)
+            :m_data(std::forward<Args>(args)...)
+        {}
+
+        T const& getData() const & {
+            return m_data;
+        }
+
+        T&& getData() && {
+            return std::move(m_data);
+        }
+    };
+
+    /** Trait for detecting instantiations of `ErrorInfo`.
+     */
+    template<typename T>
+    struct IsErrorInfo : public std::false_type {};
+    template<typename Tag_T, typename T>
+    struct IsErrorInfo<ErrorInfo<Tag_T, T>> : public std::true_type {};
+
+    namespace impl {
+    /** @cond
+     */
+    /** Helper functor for converting arbitrary types to string for printing.
+     * - if `T` is std::string acts as the identity function
+     * - if `T` has an overload of `to_string` found through an unqualified call, uses `to_string`
+     * - if `T` has an ostream inserter defined, uses `operator<<` to insert to a `std::stringstream`
+     * - otherwise use `typeid(T).name()`.
+     */
+    template<typename T, typename = void>
+    struct toStringHelper;
+
+    using std::to_string;
+
+    template<typename T, typename = void>
+    struct hasToString : public std::false_type {};
+    template<typename T>
+    struct hasToString<T, std::void_t<decltype(to_string(std::declval<T>()))>> : public std::true_type {};
+
+    template<typename T, typename = void>
+    struct hasOstreamInserter : public std::false_type {};
+    template<typename T>
+    struct hasOstreamInserter<T, std::void_t<decltype(std::declval<std::stringstream>() << std::declval<T>())>> : public std::true_type {};
+
+    template<>
+    struct toStringHelper<std::string> {
+        std::string const& operator()(std::string const& s) {
+            return s;
+        }
+    };
+
+    template<typename T>
+    struct toStringHelper<T, std::enable_if_t<!std::is_same_v<T, std::string> && hasToString<T>::value>> {
+        std::string operator()(T const& v) {
+            return to_string(v);
+        }
+    };
+
+    template<typename T>
+    struct toStringHelper<T, std::enable_if_t<!std::is_same_v<T, std::string> &&
+                                              !hasToString<T>::value &&
+                                              hasOstreamInserter<T>::value>>
+    {
+        std::string operator()(T const& v) {
+            std::stringstream sstr;
+            sstr << v;
+            return std::move(sstr.str());
+        }
+    };
+
+    template<typename T>
+    struct toStringHelper<T, std::enable_if_t<!std::is_same_v<T, std::string> &&
+                                              !hasToString<T>::value &&
+                                              !hasOstreamInserter<T>::value>>
+    {
+        std::string operator()(T const& v) {
+            return typeid(T).name();
+        }
+    };
+    /** @endcond
+    */
+    }
+
     /** Base class for all Ghulbus exceptions.
-     * We use Boost.Exception to do the heavy lifting in the exception implementation.
      * Any exception can be decorated with additional info. Instantiate an Info object from the
      * Exception_Info namespace and use `operator<<` to assign it to an exception.
-     * All exceptions thrown through \ref GHULBUS_THROW are decorated with Exception_Info::description and the
-     * locational decorators from Boost: `boost::throw_function`, `boost::throw_file` and `boost::throw_line`.
-     * You can retrieve individual decorators from an exception object with `boost::get_error_info()`.
+     * All exceptions thrown through \ref GHULBUS_THROW are decorated with Exception_Info::description and a
+     * decorator for the location of the throw site of the exception, see `Exception_Info::Records::location`.
+     * Individual decorators can be retrieved from an exception object with `getErrorInfo()`.
      * To obtain a textual representation of all the information for an exception,
-     * use `boost::diagnostic_information()`.
+     * use `getDiagnosticInformation`.
      *
      */
-    class Exception : public virtual std::exception, public virtual boost::exception {
-    public:
+    class GHULBUS_BASE_API Exception : public virtual std::exception {
+    private:
+        /** Type-erased storage for ErrorInfo (base class).
+         */
+        class ErrorInfoConcept {
+        private:
+            std::unique_ptr<ErrorInfoConcept> m_next;
+        public:
+            ErrorInfoConcept() = default;
+
+            explicit ErrorInfoConcept(std::unique_ptr<ErrorInfoConcept>&& next)
+                :m_next(std::move(next))
+            {}
+
+            virtual ~ErrorInfoConcept() noexcept = default;
+            virtual std::unique_ptr<ErrorInfoConcept> clone() const = 0;
+            virtual std::type_info const& getTypeInfo() const = 0;
+            virtual std::string dataString() const = 0;
+
+            ErrorInfoConcept const* next() const {
+                return m_next.get();
+            }
+
+            ErrorInfoConcept* next() {
+                return m_next.get();
+            }
+        };
+
+        /** Type-erased storage for ErrorInfo.
+        */
+        template<typename ErrorInfo_T>
+        class ErrorInfoModel : public ErrorInfoConcept {
+        public:
+            static_assert(IsErrorInfo<ErrorInfo_T>::value,
+                          "Only ErrorInfo types can be used to decorate Exception.");
+            using ValueType = typename ErrorInfo_T::ValueType;
+            using TagType = typename ErrorInfo_T::TagType;
+        private:
+            ValueType m_data;
+        public:
+            ErrorInfoModel(std::unique_ptr<ErrorInfoConcept>&& next, ErrorInfo_T data)
+                :ErrorInfoConcept(std::move(next)), m_data(std::move(data).getData())
+            {}
+
+            ~ErrorInfoModel() noexcept override = default;
+
+            std::unique_ptr<ErrorInfoConcept> clone() const override {
+                ErrorInfoConcept const* next_ei = next();
+                return std::make_unique<ErrorInfoModel>((next_ei == nullptr) ? nullptr : next_ei->clone(), m_data);
+            }
+
+            std::type_info const& getTypeInfo() const override {
+                return typeid(TagType);
+            }
+
+            ValueType const& data() const {
+                return m_data;
+            }
+
+            std::string dataString() const override {
+                return impl::toStringHelper<decltype(data())>{}(data());
+            }
+        };
+
+        std::unique_ptr<ErrorInfoConcept> mutable m_errorInfos;
+        mutable char const* m_throwFile = nullptr;
+        mutable char const* m_throwFunction = nullptr;
+        mutable long m_throwLine = -1;
+        mutable std::string m_message;
+    protected:
+        Exception() = default;
         virtual ~Exception() = default;
+
+        Exception(Exception&&) noexcept = default;
+        Exception& operator=(Exception&&) noexcept  = default;
+
+        Exception(Exception const& rhs)
+            :m_errorInfos(rhs.m_errorInfos->clone()),
+             m_throwFile(rhs.m_throwFile), m_throwFunction(rhs.m_throwFunction), m_throwLine(rhs.m_throwLine)
+        {}
+
+        Exception& operator=(Exception const& rhs) {
+            if (&rhs != this) {
+                m_errorInfos = rhs.m_errorInfos->clone();
+                m_throwFile = rhs.m_throwFile;
+                m_throwFunction = rhs.m_throwFunction;
+                m_throwLine = rhs.m_throwLine;
+            }
+            return *this;
+        }
+
+    public:
         /** Redeclare std::exception::what() as pure virtual.
          * We do this here so that Exception becomes abstract and to force inheriting classes to give
          * the noexcept guarantee.
          */
         virtual char const* what() const noexcept = 0;
+
+        template<typename ErrorInfo_T>
+        std::enable_if_t<IsErrorInfo<std::decay_t<ErrorInfo_T>>::value, void>
+        addErrorInfo(ErrorInfo_T&& error_info) const {
+            m_errorInfos = std::make_unique<
+                ErrorInfoModel<std::decay_t<ErrorInfo_T>>>(std::move(m_errorInfos),
+                                                           std::forward<ErrorInfo_T>(error_info));
+        }
+
+        void setExceptionLocation(char const* throw_file, char const* throw_function, long throw_line) const {
+            m_throwFile = throw_file;
+            m_throwFunction = throw_function;
+            m_throwLine = throw_line;
+        }
+
+        template<typename ErrorInfo_T>
+        typename ErrorInfo_T::ValueType const* getErrorInfo() const {
+            using TagType = typename ErrorInfo_T::TagType;
+            for (ErrorInfoConcept const* it = m_errorInfos.get(); it != nullptr; it = it->next()) {
+                if (it->getTypeInfo() == typeid(TagType)) {
+                    return &dynamic_cast<ErrorInfoModel<ErrorInfo_T> const&>(*it).data();
+                }
+            }
+            return nullptr;
+        }
+
+        char const* getDiagnosticInformation() const {
+            /*
+            <file>(<line>): Throw in function <func>
+            Dynamic exception type: bla
+            [<TagType #1>] = <data #1>
+             ...
+            [<TagType #n>] = <data #n>
+            */
+            m_message =
+                std::string((m_throwFile) ? m_throwFile : "<unknown file>") +
+                '(' + std::to_string(m_throwLine) + "): Throw in function " +
+                (m_throwFunction ? m_throwFunction : "<unknown function>") +
+                "\nDynamic exception type: " + typeid(*this).name();
+            for (ErrorInfoConcept const* it = m_errorInfos.get(); it != nullptr; it = it->next()) {
+                m_message += std::string("\n[") + it->getTypeInfo().name() + "] = " + it->dataString();
+            }
+            return m_message.c_str();
+        }
     };
+
 
     /** Exception decorators.
      * Place all exception decorators in this namespace.
@@ -63,6 +280,7 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         namespace Tags
         {
+            struct GHULBUS_BASE_API location { };
             struct GHULBUS_BASE_API description { };
             struct GHULBUS_BASE_API filename { };
         }
@@ -70,6 +288,15 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         namespace Records
         {
+            struct location {
+                char const* file;
+                char const* function;
+                long line;
+
+                location(char const* nfile, char const* nfunc, long nline)
+                    :file(nfile), function(nfunc), line(nline)
+                {}
+            };
         }
 
         /** @name Decorators
@@ -77,9 +304,49 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         /** A user-provided string describing the error.
          */
-        typedef boost::error_info<Tags::description, std::string> description;
-        typedef boost::error_info<Tags::filename, std::string> filename;
+        typedef ErrorInfo<Tags::location, Records::location> location;
+        typedef ErrorInfo<Tags::description, std::string> description;
+        typedef ErrorInfo<Tags::filename, std::string> filename;
         /// @}
+    }
+
+    /** Decorate an exception with an ErrorInfo.
+     */
+    template<typename Exception_T, typename ErrorInfo_T>
+    inline std::enable_if_t<IsErrorInfo<std::decay_t<ErrorInfo_T>>::value &&
+                            std::is_base_of_v<Exception, Exception_T>, Exception_T> const&
+    operator<<(Exception_T const& e, ErrorInfo_T&& error_info) {
+        e.addErrorInfo(std::forward<ErrorInfo_T>(error_info));
+        return e;
+    }
+
+    /** Decorate an exception with an the Exception_Info::location error info.
+     */
+    template<typename Exception_T>
+    inline std::enable_if_t<std::is_base_of_v<Exception, Exception_T>, Exception_T> const&
+    operator<<(Exception_T const& e, Exception_Info::location l) {
+        Exception_Info::Records::location const loc = l.getData();
+        e.setExceptionLocation(loc.file, loc.function, loc.line);
+        return e;
+    }
+
+    /** Attempts to retrieve the error decoration of type `ErrorInfo_T` from the exception `e`.
+     * @return A pointer to the decorator record if it could be retrieved; `nullptr` otherwise.
+     *         Retrieval may fail if `Exception_T` is not a class derived from `Exception` or
+     *         if the exception does not contain a decorator of the requested type.
+     */
+    template<typename ErrorInfo_T, typename Exception_T>
+    inline typename ErrorInfo_T::ValueType const* getErrorInfo(Exception_T const& e) {
+        if (Exception const* exc = dynamic_cast<Exception const*>(&e); exc != nullptr) {
+            return exc->getErrorInfo<ErrorInfo_T>();
+        }
+        return nullptr;
+    }
+
+    /** Helper function for retrieving a diagnostic information string about the exception.
+     */
+    inline char const* getDiagnosticInformation(Exception const& e) {
+        return e.getDiagnosticInformation();
     }
 
     /** Helper function applying a variadic number of decorators to an exception.
@@ -88,7 +355,7 @@ namespace GHULBUS_BASE_NAMESPACE
      * @return A reference to the exception object e.
      */
     template<typename Exception_T, typename... ExceptionInfo_Ts>
-    auto decorate_exception(Exception_T const& e, ExceptionInfo_Ts const&... args)
+    inline auto decorate_exception(Exception_T const& e, ExceptionInfo_Ts const&... args)
     {
         return (e << ... << args);
     }
@@ -99,13 +366,6 @@ namespace GHULBUS_BASE_NAMESPACE
     {
         namespace impl
         {
-#if BOOST_COMP_MSVC
-#pragma warning(push)
-#pragma warning(disable:4275)   // exported class inherits from non-exported class;
-                                // this should be fine here, as Exception is a pure interface class.
-                                // the exporting here is not needed on Windows, but on OS X it will mess up
-                                // the rtti when linking dynamically without it.
-#endif
             /** Mixin class for implementing Ghulbus::Exceptions.
             * This class provides a default implementation for what() that gives a detailed error message.
             */
@@ -113,12 +373,9 @@ namespace GHULBUS_BASE_NAMESPACE
             {
             public:
                 char const* what() const noexcept override {
-                    return boost::diagnostic_information_what(*this);
+                    return ::GHULBUS_BASE_NAMESPACE::getDiagnosticInformation(*this);
                 }
             };
-#if BOOST_COMP_MSVC
-#pragma warning(pop)
-#endif
         }
 
         /** Thrown by Assert::failThrow in case of a failing exception.
@@ -158,13 +415,31 @@ namespace GHULBUS_BASE_NAMESPACE
     }
 }
 
+/** @cond
+ */
+#if defined _MSC_VER
+#   define GHULBUS_INTERNAL_HELPER_FUNCTION_2 __FUNCSIG__
+#elif defined __clang__
+#   define GHULBUS_INTERNAL_HELPER_FUNCTION_2 __PRETTY_FUNCTION__
+#elif defined __GNUC__
+#   define GHULBUS_INTERNAL_HELPER_FUNCTION_2 __PRETTY_FUNCTION__
+#else
+#   define GHULBUS_INTERNAL_HELPER_FUNCTION_2 __func__
+#endif
+/** @endcond
+ */
+
 /** Throw a Ghulbus::Exception.
  * All exceptions thrown with this macro will be decorated with the supplied string description and information
  * about the source code location that triggered the throw.
  * @param exc An exception object inheriting from Ghulbus::Exception.
- * @param str A null-terminated C-string to attach to the exception as description.
+ * @param str A std::string or null-terminated C-string to attach to the exception as description.
  */
 #define GHULBUS_THROW(exc, str) \
-    BOOST_THROW_EXCEPTION(( (exc) << ::GHULBUS_BASE_NAMESPACE::Exception_Info::description(str) ))
+    throw ( (exc) <<                                                                            \
+        ::GHULBUS_BASE_NAMESPACE::Exception_Info::location(__FILE__,                            \
+                                                           GHULBUS_INTERNAL_HELPER_FUNCTION_2,  \
+                                                           __LINE__) <<                         \
+        ::GHULBUS_BASE_NAMESPACE::Exception_Info::description(str) )
 
 #endif

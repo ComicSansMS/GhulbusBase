@@ -1,10 +1,6 @@
 #include <gbBase/Assert.hpp>
 
-#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
 #include <gbBase/Exception.hpp>
-
-#include <boost/exception/all.hpp>
-#endif
 
 #include <chrono>
 #include <cstdlib>
@@ -72,16 +68,13 @@ void failHalt(HandlerParameters const& param)
     for(;;) { std::this_thread::sleep_for(std::chrono::hours(1)); }
 }
 
-#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
 void failThrow(HandlerParameters const& param)
 {
-    boost::throw_exception(boost::enable_error_info(Exceptions::AssertFailed()) <<
-                           boost::throw_file(param.file) <<
-                           boost::throw_line(param.line) <<
-                           boost::throw_function(param.function) <<
-                           Exception_Info::description(std::string(param.condition) +
-                               (param.message ? " - " : "") + (param.message ? param.message : "")));
+    Exceptions::AssertFailed exc;
+    exc.setExceptionLocation(param.file, param.function, param.line);
+    exc << Exception_Info::description(std::string(param.condition) +
+                                       (param.message ? " - " : "") + (param.message ? param.message : ""));
+    throw exc;
 }
-#endif
 }
 }
