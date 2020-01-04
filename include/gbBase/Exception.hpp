@@ -121,7 +121,7 @@ namespace GHULBUS_BASE_NAMESPACE
      * decorator for the location of the throw site of the exception, see `Exception_Info::Records::location`.
      * Individual decorators can be retrieved from an exception object with `getErrorInfo()`.
      * To obtain a textual representation of all the information for an exception,
-     * use `getDiagnosticInformation`.
+     * use `getDiagnosticMessage`.
      *
      */
     class GHULBUS_BASE_API Exception : public virtual std::exception {
@@ -247,7 +247,7 @@ namespace GHULBUS_BASE_NAMESPACE
             return nullptr;
         }
 
-        char const* getDiagnosticInformation() const {
+        char const* getDiagnosticMessage() const {
             /*
             <file>(<line>): Throw in function <func>
             Dynamic exception type: bla
@@ -345,8 +345,8 @@ namespace GHULBUS_BASE_NAMESPACE
 
     /** Helper function for retrieving a diagnostic information string about the exception.
      */
-    inline char const* getDiagnosticInformation(Exception const& e) {
-        return e.getDiagnosticInformation();
+    inline char const* getDiagnosticMessage(Exception const& e) {
+        return e.getDiagnosticMessage();
     }
 
     /** Helper function applying a variadic number of decorators to an exception.
@@ -373,7 +373,7 @@ namespace GHULBUS_BASE_NAMESPACE
             {
             public:
                 char const* what() const noexcept override {
-                    return ::GHULBUS_BASE_NAMESPACE::getDiagnosticInformation(*this);
+                    return ::GHULBUS_BASE_NAMESPACE::getDiagnosticMessage(*this);
                 }
             };
         }

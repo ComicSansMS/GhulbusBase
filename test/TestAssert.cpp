@@ -1,8 +1,6 @@
 #include <gbBase/Assert.hpp>
 
-#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
 #include <gbBase/Exception.hpp>
-#endif
 
 #include <catch.hpp>
 
@@ -61,7 +59,6 @@ TEST_CASE("Assert")
         CHECK(g_handlerWasCalled);
     }
 
-#ifndef GHULBUS_CONFIG_BASE_BARE_BUILD
     SECTION("Throw Handler throws AssertFailed exception")
     {
         // the big gotcha of this test is that we throw across dll boundaries here.
@@ -82,14 +79,13 @@ TEST_CASE("Assert")
         try {
             GHULBUS_ASSERT_PRD_MESSAGE(false, test_msg);
         } catch(Exceptions::AssertFailed& e) {
-            auto const err_msg = boost::get_error_info<Exception_Info::description>(e);
+            auto const err_msg = getErrorInfo<Exception_Info::description>(e);
             REQUIRE(err_msg);
             CHECK(*err_msg == std::string("false - ") + test_msg);
             was_caught = true;
         }
         CHECK(was_caught);
     }
-#endif
 
     SECTION("Precondition macro should behave the same as assert")
     {

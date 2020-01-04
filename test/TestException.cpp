@@ -4,6 +4,31 @@
 
 #include <string>
 
+namespace {
+
+struct to_string_printable {};
+
+std::string to_string(to_string_printable) {
+    return "to_string_printable";
+}
+
+struct ostream_printable {};
+
+std::ostream& operator<<(std::ostream& os, ostream_printable) {
+    return os << "ostream_printable";
+}
+
+struct unprintable {};
+
+struct tag_to_string_printable {};
+struct tag_ostream_printable {};
+struct tag_unprintable {};
+
+using InfoToStringPrintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_to_string_printable, to_string_printable>;
+using InfoOstreamPrintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_ostream_printable, ostream_printable>;
+using InfoUnprintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_unprintable, unprintable>;
+}
+
 TEST_CASE("Exception")
 {
     using namespace GHULBUS_BASE_NAMESPACE;
@@ -24,16 +49,54 @@ TEST_CASE("Exception")
         Exceptions::NotImplemented e;
         std::string testtext("Lorem ipsum");
         e << Exception_Info::description(testtext);
-        auto const info = boost::get_error_info<Exception_Info::description>(e);
+        auto const info = getErrorInfo<Exception_Info::description>(e);
         REQUIRE(info);
         CHECK(*info == testtext);
+    }
+
+    SECTION("Exception Message - std::string Types")
+    {
+        Exceptions::NotImplemented e;
+        std::string testtext("Lorem ipsum");
+        e << Exception_Info::description(testtext);
+        std::string const info = getDiagnosticMessage(e);
+        INFO(info);
+        CHECK(info.find(testtext) != std::string::npos);
+    }
+
+    SECTION("Exception Message - to_string Printable Types")
+    {
+        Exceptions::NotImplemented e;
+        e << InfoToStringPrintable();
+        std::string const info = getDiagnosticMessage(e);
+        INFO(info);
+        CHECK(info.find(to_string(to_string_printable{})) != std::string::npos);
+    }
+
+    SECTION("Exception Message - ostream Printable Types")
+    {
+        Exceptions::NotImplemented e;
+        e << InfoOstreamPrintable();
+        std::string const info = getDiagnosticMessage(e);
+        INFO(info);
+        CHECK(info.find("ostream_printable") != std::string::npos);
+    }
+
+    SECTION("Exception Message - Unprintable Types")
+    {
+        Exceptions::NotImplemented e;
+        e << InfoUnprintable();
+        std::string const info = getDiagnosticMessage(e);
+        INFO(info);
+        // result is implementation-defined here, so there's no reasonable check for this
+        CHECK(!info.empty());
     }
 
     SECTION("Exception decorating through decorate_exception")
     {
         std::string testtext("Lorem ipsum");
         auto const e = decorate_exception(Exceptions::NotImplemented(), Exception_Info::description(testtext));
-        auto const info = boost::get_error_info<Exception_Info::description>(e);
+        auto const info = getErrorInfo<Exception_Info::description>(e);
         REQUIRE(info);
         CHECK(*info == testtext);
     }
@@ -48,8 +111,9 @@ TEST_CASE("Exception")
             } catch(std::exception& e) {
                 was_caught = true;
                 e.what();
-                auto const info = boost::get_error_info<Exception_Info::description>(e);
+                auto const info = getErrorInfo<Exception_Info::description>(e);
                 REQUIRE(info);
+                INFO(e.what());
                 CHECK(*info == testtext);
                 CHECK(std::string(e.what()).find(testtext) != std::string::npos);
             }
