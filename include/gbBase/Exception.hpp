@@ -9,6 +9,7 @@
 #include <gbBase/config.hpp>
 
 #include <exception>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
