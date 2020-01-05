@@ -71,7 +71,7 @@ TEST_CASE("Pool Allocation Strategy")
     {
         std::size_t constexpr chunk_size = 1024;
         std::size_t constexpr storage_size = Alloc::calculateStorageSize(chunk_size, 10);
-        std::aligned_storage_t<storage_size, alignof(Header)> s;
+        std::aligned_storage_t<storage_size, std::max<std::size_t>(alignof(Header), 16u)> s;
         std::byte* const ptr = reinterpret_cast<std::byte*>(&s);
         storage.memory_ptr = ptr;
         storage.memory_size = storage_size;
