@@ -71,7 +71,7 @@ void failHalt(HandlerParameters const& param)
 void failThrow(HandlerParameters const& param)
 {
     Exceptions::AssertFailed exc;
-    exc.setExceptionLocation(param.file, param.function, param.line);
+    exc << Exception_Info::location(param.file, param.function, param.line);
     exc << Exception_Info::description(std::string(param.condition) +
                                        (param.message ? " - " : "") + (param.message ? param.message : ""));
     throw exc;

@@ -20,10 +20,12 @@ std::ostream& operator<<(std::ostream& os, ostream_printable) {
 
 struct unprintable {};
 
+struct tag_is_std_string {};
 struct tag_to_string_printable {};
 struct tag_ostream_printable {};
 struct tag_unprintable {};
 
+using InfoIsStdString = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_is_std_string, std::string>;
 using InfoToStringPrintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_to_string_printable, to_string_printable>;
 using InfoOstreamPrintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_ostream_printable, ostream_printable>;
 using InfoUnprintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_unprintable, unprintable>;
@@ -58,7 +60,7 @@ TEST_CASE("Exception")
     {
         Exceptions::NotImplemented e;
         std::string testtext("Lorem ipsum");
-        e << Exception_Info::description(testtext);
+        e << InfoIsStdString(testtext);
         std::string const info = getDiagnosticMessage(e);
         INFO(info);
         CHECK(info.find(testtext) != std::string::npos);
@@ -92,13 +94,43 @@ TEST_CASE("Exception")
         CHECK(!info.empty());
     }
 
-    SECTION("Exception decorating through decorate_exception")
+    SECTION("Exception decorating through decorate_exception and operator<<")
     {
-        std::string testtext("Lorem ipsum");
+        std::string const testtext("Lorem ipsum");
         auto const e = decorate_exception(Exceptions::NotImplemented(), Exception_Info::description(testtext));
         auto const info = getErrorInfo<Exception_Info::description>(e);
         REQUIRE(info);
         CHECK(*info == testtext);
+
+        auto const nothing_there = getErrorInfo<Exception_Info::filename>(e);
+        CHECK(nothing_there == nullptr);
+
+        std::string const testfile("testfile.txt");
+        e << Exception_Info::filename(testfile);
+        auto const filename = getErrorInfo<Exception_Info::filename>(e);
+        REQUIRE(filename);
+        CHECK(*filename == testfile);
+
+        std::exception x;
+        auto const not_an_exception = getErrorInfo<Exception_Info::description>(x);
+        CHECK(not_an_exception == nullptr);
+    }
+
+    SECTION("Decorating with location is a special case")
+    {
+        std::string testtext("Lorem ipsum");
+        Exceptions::NotImplemented e;
+        e << Exception_Info::description(testtext);
+        std::string const file("testfile.txt");
+        std::string const func("testfunc.txt");
+        long const line = 42;
+        e << Exception_Info::location(file.c_str(), func.c_str(), line);
+
+        auto const loc = getErrorInfo<Exception_Info::location>(e);
+        REQUIRE(loc);
+        CHECK(loc->file == file);
+        CHECK(loc->function == func);
+        CHECK(loc->line == line);
     }
 
     SECTION("Exceptions can be caught as std exceptions")

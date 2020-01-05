@@ -115,6 +115,48 @@ namespace GHULBUS_BASE_NAMESPACE
     */
     }
 
+    /** Exception decorators.
+     * Place all exception decorators in this namespace.
+     * A decorator is an instance of the boost::error_info template with a unique (empty) tag type and a record type
+     * that provides storage for the information.
+     * For non-trivial record-types, provide a std::ostream inserter to allow for nice automatic error messages.
+     */
+    namespace Exception_Info {
+        /** Decorator Tags.
+         * Tags are empty types used to uniquely identify a decoratory type.
+         */
+        namespace Tags
+        {
+            struct GHULBUS_BASE_API location { };
+            struct GHULBUS_BASE_API description { };
+            struct GHULBUS_BASE_API filename { };
+        }
+        /** Decorator record types.
+         */
+        namespace Records
+        {
+            struct location {
+                char const* file;
+                char const* function;
+                long line;
+
+                location(char const* nfile, char const* nfunc, long nline)
+                    :file(nfile), function(nfunc), line(nline)
+                {}
+            };
+        }
+
+        /** @name Decorators
+         * @{
+         */
+        /** A user-provided string describing the error.
+         */
+        using location = ErrorInfo<Tags::location, Records::location>;
+        using description = ErrorInfo<Tags::description, std::string>;
+        using filename = ErrorInfo<Tags::filename, std::string>;
+        /// @}
+    }
+
     /** Base class for all Ghulbus exceptions.
      * Any exception can be decorated with additional info. Instantiate an Info object from the
      * Exception_Info namespace and use `operator<<` to assign it to an exception.
@@ -190,10 +232,9 @@ namespace GHULBUS_BASE_NAMESPACE
         };
 
         std::unique_ptr<ErrorInfoConcept> mutable m_errorInfos;
-        mutable char const* m_throwFile = nullptr;
-        mutable char const* m_throwFunction = nullptr;
-        mutable long m_throwLine = -1;
-        mutable std::string m_message;
+        mutable Exception_Info::Records::location m_location = Exception_Info::Records::location(nullptr, nullptr, -1);
+        mutable std::string m_description;
+        mutable std::string m_diagnosticMessageCached;
     protected:
         Exception() = default;
         virtual ~Exception() = default;
@@ -202,16 +243,15 @@ namespace GHULBUS_BASE_NAMESPACE
         Exception& operator=(Exception&&) noexcept  = default;
 
         Exception(Exception const& rhs)
-            :m_errorInfos(rhs.m_errorInfos->clone()),
-             m_throwFile(rhs.m_throwFile), m_throwFunction(rhs.m_throwFunction), m_throwLine(rhs.m_throwLine)
+            :m_errorInfos(rhs.m_errorInfos ? rhs.m_errorInfos->clone() : nullptr),
+             m_location(rhs.m_location), m_description(rhs.m_description)
         {}
 
         Exception& operator=(Exception const& rhs) {
             if (&rhs != this) {
                 m_errorInfos = rhs.m_errorInfos->clone();
-                m_throwFile = rhs.m_throwFile;
-                m_throwFunction = rhs.m_throwFunction;
-                m_throwLine = rhs.m_throwLine;
+                m_location = rhs.m_location;
+                m_description = rhs.m_description;
             }
             return *this;
         }
@@ -223,6 +263,7 @@ namespace GHULBUS_BASE_NAMESPACE
          */
         virtual char const* what() const noexcept = 0;
 
+    private:
         template<typename ErrorInfo_T>
         std::enable_if_t<IsErrorInfo<std::decay_t<ErrorInfo_T>>::value, void>
         addErrorInfo(ErrorInfo_T&& error_info) const {
@@ -231,10 +272,20 @@ namespace GHULBUS_BASE_NAMESPACE
                                                            std::forward<ErrorInfo_T>(error_info));
         }
 
-        void setExceptionLocation(char const* throw_file, char const* throw_function, long throw_line) const {
-            m_throwFile = throw_file;
-            m_throwFunction = throw_function;
-            m_throwLine = throw_line;
+        void setExceptionLocation(Exception_Info::Records::location const& location) const {
+            m_location = location;
+        }
+
+        Exception_Info::Records::location const& getLocation() const {
+            return m_location;
+        }
+
+        void setDescription(std::string description) const {
+            m_description = std::move(description);
+        }
+
+        std::string const& getDescription() const {
+            return m_description;
         }
 
         template<typename ErrorInfo_T>
@@ -256,60 +307,28 @@ namespace GHULBUS_BASE_NAMESPACE
              ...
             [<TagType #n>] = <data #n>
             */
-            m_message =
-                std::string((m_throwFile) ? m_throwFile : "<unknown file>") +
-                '(' + std::to_string(m_throwLine) + "): Throw in function " +
-                (m_throwFunction ? m_throwFunction : "<unknown function>") +
-                "\nDynamic exception type: " + typeid(*this).name();
+            m_diagnosticMessageCached =
+                std::string((m_location.file) ? m_location.file : "<unknown file>") +
+                '(' + std::to_string(m_location.line) + "): Throw in function " +
+                (m_location.function ? m_location.function : "<unknown function>") +
+                "\nDynamic exception type: " + typeid(*this).name() +
+                "\n" + m_description;
             for (ErrorInfoConcept const* it = m_errorInfos.get(); it != nullptr; it = it->next()) {
-                m_message += std::string("\n[") + it->getTypeInfo().name() + "] = " + it->dataString();
+                m_diagnosticMessageCached += std::string("\n[") + it->getTypeInfo().name() + "] = " +
+                                             it->dataString();
             }
-            return m_message.c_str();
+            return m_diagnosticMessageCached.c_str();
         }
+
+        friend char const* getDiagnosticMessage(Exception const& e);
+        template<typename ErrorInfo_T, typename Exception_T>
+        friend typename ErrorInfo_T::ValueType const* getErrorInfo(Exception_T const& e);
+        template<typename Exception_T, typename ErrorInfo_T>
+        friend std::enable_if_t<IsErrorInfo<std::decay_t<ErrorInfo_T>>::value &&
+                                std::is_base_of_v<Exception, Exception_T>, Exception_T> const&
+        operator<<(Exception_T const& e, ErrorInfo_T&& error_info);
     };
 
-
-    /** Exception decorators.
-     * Place all exception decorators in this namespace.
-     * A decorator is an instance of the boost::error_info template with a unique (empty) tag type and a record type
-     * that provides storage for the information.
-     * For non-trivial record-types, provide a std::ostream inserter to allow for nice automatic error messages.
-     */
-    namespace Exception_Info {
-        /** Decorator Tags.
-         * Tags are empty types used to uniquely identify a decoratory type.
-         */
-        namespace Tags
-        {
-            struct GHULBUS_BASE_API location { };
-            struct GHULBUS_BASE_API description { };
-            struct GHULBUS_BASE_API filename { };
-        }
-        /** Decorator record types.
-         */
-        namespace Records
-        {
-            struct location {
-                char const* file;
-                char const* function;
-                long line;
-
-                location(char const* nfile, char const* nfunc, long nline)
-                    :file(nfile), function(nfunc), line(nline)
-                {}
-            };
-        }
-
-        /** @name Decorators
-         * @{
-         */
-        /** A user-provided string describing the error.
-         */
-        using location = ErrorInfo<Tags::location, Records::location>;
-        using description = ErrorInfo<Tags::description, std::string>;
-        using filename = ErrorInfo<Tags::filename, std::string>;
-        /// @}
-    }
 
     /** Decorate an exception with an ErrorInfo.
      */
@@ -317,17 +336,13 @@ namespace GHULBUS_BASE_NAMESPACE
     inline std::enable_if_t<IsErrorInfo<std::decay_t<ErrorInfo_T>>::value &&
                             std::is_base_of_v<Exception, Exception_T>, Exception_T> const&
     operator<<(Exception_T const& e, ErrorInfo_T&& error_info) {
-        e.addErrorInfo(std::forward<ErrorInfo_T>(error_info));
-        return e;
-    }
-
-    /** Decorate an exception with an the Exception_Info::location error info.
-     */
-    template<typename Exception_T>
-    inline std::enable_if_t<std::is_base_of_v<Exception, Exception_T>, Exception_T> const&
-    operator<<(Exception_T const& e, Exception_Info::location l) {
-        Exception_Info::Records::location const loc = l.getData();
-        e.setExceptionLocation(loc.file, loc.function, loc.line);
+        if constexpr (std::is_same_v<std::decay_t<ErrorInfo_T>, Exception_Info::location>) {
+            e.setExceptionLocation(error_info.getData());
+        } else if constexpr (std::is_same_v<std::decay_t<ErrorInfo_T>, Exception_Info::description>) {
+            e.setDescription(std::forward<ErrorInfo_T>(error_info).getData());
+        } else {
+            e.addErrorInfo(std::forward<ErrorInfo_T>(error_info));
+        }
         return e;
     }
 
@@ -339,7 +354,13 @@ namespace GHULBUS_BASE_NAMESPACE
     template<typename ErrorInfo_T, typename Exception_T>
     inline typename ErrorInfo_T::ValueType const* getErrorInfo(Exception_T const& e) {
         if (Exception const* exc = dynamic_cast<Exception const*>(&e); exc != nullptr) {
-            return exc->getErrorInfo<ErrorInfo_T>();
+            if constexpr (std::is_same_v<std::decay_t<ErrorInfo_T>, Exception_Info::location>) {
+                return &(exc->getLocation());
+            } else if constexpr (std::is_same_v<std::decay_t<ErrorInfo_T>, Exception_Info::description>) {
+                return &(exc->getDescription());
+            } else {
+                return exc->getErrorInfo<ErrorInfo_T>();
+            }
         }
         return nullptr;
     }
