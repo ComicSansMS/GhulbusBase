@@ -6,6 +6,15 @@
 
 namespace {
 
+struct TestRecord {
+    int i;
+    std::string s;
+
+    TestRecord(int ii, std::string ss)
+        :i(ii), s(ss)
+    {}
+};
+
 struct to_string_printable {};
 
 std::string to_string(to_string_printable) {
@@ -20,11 +29,13 @@ std::ostream& operator<<(std::ostream& os, ostream_printable) {
 
 struct unprintable {};
 
+struct tag_test_tag {};
 struct tag_is_std_string {};
 struct tag_to_string_printable {};
 struct tag_ostream_printable {};
 struct tag_unprintable {};
 
+using InfoTestInfo = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_test_tag, TestRecord>;
 using InfoIsStdString = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_is_std_string, std::string>;
 using InfoToStringPrintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_to_string_printable, to_string_printable>;
 using InfoOstreamPrintable = GHULBUS_BASE_NAMESPACE::ErrorInfo<tag_ostream_printable, ostream_printable>;
@@ -106,10 +117,15 @@ TEST_CASE("Exception")
         CHECK(nothing_there == nullptr);
 
         std::string const testfile("testfile.txt");
-        e << Exception_Info::filename(testfile);
+        e << Exception_Info::filename(testfile) << InfoTestInfo(42, "blablub");
+        INFO(e.what());
         auto const filename = getErrorInfo<Exception_Info::filename>(e);
         REQUIRE(filename);
         CHECK(*filename == testfile);
+        auto const test_record = getErrorInfo<InfoTestInfo>(e);
+        REQUIRE(test_record);
+        CHECK(test_record->i == 42);
+        CHECK(test_record->s == "blablub");
 
         std::exception x;
         auto const not_an_exception = getErrorInfo<Exception_Info::description>(x);

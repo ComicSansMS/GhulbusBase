@@ -149,10 +149,14 @@ namespace GHULBUS_BASE_NAMESPACE
         /** @name Decorators
          * @{
          */
-        /** A user-provided string describing the error.
+        /** The source code location where the exception originated.
          */
         using location = ErrorInfo<Tags::location, Records::location>;
+        /** A user-provided string describing the error.
+         */
         using description = ErrorInfo<Tags::description, std::string>;
+        /** A filename for errors occurring in the context of a file operation.
+         */
         using filename = ErrorInfo<Tags::filename, std::string>;
         /// @}
     }
