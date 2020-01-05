@@ -381,9 +381,23 @@ namespace GHULBUS_BASE_NAMESPACE
      * @return A reference to the exception object e.
      */
     template<typename Exception_T, typename... ExceptionInfo_Ts>
-    inline auto decorate_exception(Exception_T const& e, ExceptionInfo_Ts const&... args)
+    inline auto decorate_exception(Exception_T& e, ExceptionInfo_Ts const&... args)
     {
         return (e << ... << args);
+    }
+
+    /** Helper function applying a variadic number of decorators to an unnamed temporary exception.
+     * Unlike the lvalue overload, this returns a new Exception_T object instead of a reference.
+     * @param e An unnamed temporary exception object.
+     * @param args The decorators that will be applied to the exception object e.
+     * @return A reference to the exception object e.
+     */
+    template<typename Exception_T, typename... ExceptionInfo_Ts,
+             typename = std::enable_if_t<!std::is_lvalue_reference_v<Exception_T>>>
+    inline Exception_T decorate_exception(Exception_T&& e, ExceptionInfo_Ts const&... args)
+    {
+        (e << ... << args);
+        return std::move(e);
     }
 
     /** Concrete exception objects.

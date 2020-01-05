@@ -134,9 +134,7 @@ TEST_CASE("Exception")
 
     SECTION("Decorating with location is a special case")
     {
-        std::string testtext("Lorem ipsum");
         Exceptions::NotImplemented e;
-        e << Exception_Info::description(testtext);
         std::string const file("testfile.txt");
         std::string const func("testfunc.txt");
         long const line = 42;
@@ -147,6 +145,151 @@ TEST_CASE("Exception")
         CHECK(loc->file == file);
         CHECK(loc->function == func);
         CHECK(loc->line == line);
+    }
+
+    SECTION("Decorating with description is a special case")
+    {
+        Exceptions::NotImplemented e;
+        std::string const testtext("lorem ipsum");
+        e << Exception_Info::description(testtext);
+
+        auto const desc = getErrorInfo<Exception_Info::description>(e);
+        REQUIRE(desc);
+        CHECK(*desc == testtext);
+    }
+
+    SECTION("Copy construction")
+    {
+        std::string const testtext("Lorem ipsum");
+        std::string const testfile("awesome_source.cpp");
+        std::string const testfunc("ultimate_test_function_2k(int, float, long)");
+        auto const e = decorate_exception(Exceptions::NotImplemented(),
+                                          Exception_Info::description(testtext),
+                                          Exception_Info::location(testfile.c_str(), testfunc.c_str(), 42),
+                                          Exception_Info::filename(testfile),
+                                          InfoTestInfo(23, "fooberella"));
+        Exceptions::NotImplemented e2(e);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e));
+        CHECK(*getErrorInfo<Exception_Info::description>(e) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e2));
+        CHECK(*getErrorInfo<Exception_Info::description>(e2) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e));
+        CHECK(getErrorInfo<Exception_Info::location>(e)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e2));
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::filename>(e));
+        CHECK(*getErrorInfo<Exception_Info::filename>(e) == testfile);
+        REQUIRE(getErrorInfo<Exception_Info::filename>(e2));
+        CHECK(*getErrorInfo<Exception_Info::filename>(e2) == testfile);
+        REQUIRE(getErrorInfo<InfoTestInfo>(e));
+        CHECK(getErrorInfo<InfoTestInfo>(e)->i == 23);
+        CHECK(getErrorInfo<InfoTestInfo>(e)->s == "fooberella");
+        REQUIRE(getErrorInfo<InfoTestInfo>(e2));
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->i == 23);
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->s == "fooberella");
+    }
+
+    SECTION("Copy assignment")
+    {
+        std::string const testtext("Lorem ipsum");
+        std::string const testfile("awesome_source.cpp");
+        std::string const testfunc("ultimate_test_function_2k(int, float, long)");
+        auto const e = decorate_exception(Exceptions::NotImplemented(),
+                                          Exception_Info::description(testtext),
+                                          Exception_Info::location(testfile.c_str(), testfunc.c_str(), 42),
+                                          Exception_Info::filename(testfile),
+                                          InfoTestInfo(23, "fooberella"));
+        Exceptions::NotImplemented e2;
+        CHECK(!getErrorInfo<InfoTestInfo>(e2));
+        CHECK(!getErrorInfo<Exception_Info::filename>(e2));
+        e2 = e;
+        REQUIRE(getErrorInfo<Exception_Info::description>(e));
+        CHECK(*getErrorInfo<Exception_Info::description>(e) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e2));
+        CHECK(*getErrorInfo<Exception_Info::description>(e2) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e));
+        CHECK(getErrorInfo<Exception_Info::location>(e)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e2));
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::filename>(e));
+        CHECK(*getErrorInfo<Exception_Info::filename>(e) == testfile);
+        REQUIRE(getErrorInfo<Exception_Info::filename>(e2));
+        CHECK(*getErrorInfo<Exception_Info::filename>(e2) == testfile);
+        REQUIRE(getErrorInfo<InfoTestInfo>(e));
+        CHECK(getErrorInfo<InfoTestInfo>(e)->i == 23);
+        CHECK(getErrorInfo<InfoTestInfo>(e)->s == "fooberella");
+        REQUIRE(getErrorInfo<InfoTestInfo>(e2));
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->i == 23);
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->s == "fooberella");
+    }
+
+    SECTION("Move construction")
+    {
+        struct MovableException : public GHULBUS_BASE_NAMESPACE::Exceptions::impl::ExceptionImpl {
+            MovableException() = default;
+            MovableException(MovableException&&) = default;
+            MovableException& operator=(MovableException&&) = default;
+        };
+        std::string const testtext("Lorem ipsum");
+        std::string const testfile("awesome_source.cpp");
+        std::string const testfunc("ultimate_test_function_2k(int, float, long)");
+        auto e = decorate_exception(MovableException(),
+                                    Exception_Info::description(testtext),
+                                    Exception_Info::location(testfile.c_str(), testfunc.c_str(), 42),
+                                    Exception_Info::filename(testfile),
+                                    InfoTestInfo(23, "fooberella"));
+        MovableException e2(std::move(e));
+        REQUIRE(getErrorInfo<Exception_Info::description>(e2));
+        CHECK(*getErrorInfo<Exception_Info::description>(e2) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e2));
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::filename>(e2));
+        CHECK(*getErrorInfo<Exception_Info::filename>(e2) == testfile);
+        REQUIRE(getErrorInfo<InfoTestInfo>(e2));
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->i == 23);
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->s == "fooberella");
+    }
+
+    SECTION("Move assignment")
+    {
+        struct MovableException : public GHULBUS_BASE_NAMESPACE::Exceptions::impl::ExceptionImpl {
+            MovableException() = default;
+            MovableException(MovableException&&) = default;
+            MovableException& operator=(MovableException&&) = default;
+        };
+        std::string const testtext("Lorem ipsum");
+        std::string const testfile("awesome_source.cpp");
+        std::string const testfunc("ultimate_test_function_2k(int, float, long)");
+        auto e = decorate_exception(MovableException(),
+                                    Exception_Info::description(testtext),
+                                    Exception_Info::location(testfile.c_str(), testfunc.c_str(), 42), 
+                                    Exception_Info::filename(testfile),
+                                    InfoTestInfo(23, "fooberella"));
+        MovableException e2;
+        CHECK(!getErrorInfo<InfoTestInfo>(e2));
+        CHECK(!getErrorInfo<Exception_Info::filename>(e2));
+        e2 = std::move(e);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e2));
+        CHECK(*getErrorInfo<Exception_Info::description>(e2) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e2));
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::filename>(e2));
+        CHECK(*getErrorInfo<Exception_Info::filename>(e2) == testfile);
+        REQUIRE(getErrorInfo<InfoTestInfo>(e2));
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->i == 23);
+        CHECK(getErrorInfo<InfoTestInfo>(e2)->s == "fooberella");
     }
 
     SECTION("Exceptions can be caught as std exceptions")
