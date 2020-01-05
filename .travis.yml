@@ -1,25 +1,27 @@
-
 language: cpp
 os: linux
-dist: bionic
-sudo: false
 
-compiler:
-  - gcc
-addons:
-  apt:
-    packages:
-    # compiler
-      - cmake
-      - g++-8
-      - gcc-8
-      - ninja-build
-    # doc tools
-      - doxygen
-      - graphviz
-      - mscgen
-env:
-  - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && GCOV=gcov-8"
+jobs:
+  include:
+    - os: linux
+      dist: bionic
+      compiler: clang
+      group: travis_latest
+      env: MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+      addons:
+        apt:
+            packages: ["clang-8", "libc++-8-dev", "libc++abi-8-dev", "ninja-build", "doxygen", "graphviz", "mscgen"]
+            sources: ["llvm-toolchain-xenial-8"]
+
+    - os: linux
+      dist: bionic
+      compiler: gcc
+      group: travis_latest
+      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && GCOV=gcov-8"
+      addons:
+        apt:
+            packages: ["g++-8", "libstdc++-8-dev", "ninja-build", "doxygen", "graphviz", "mscgen"]
+            sources: { sourceline: "ppa:ubuntu-toolchain-r/test" }
 
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -30,38 +32,38 @@ install:
 
 before_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - mkdir build-static-gcc && mkdir build-shared-gcc && mkdir build-bare-gcc && mkdir build-coverage-gcc
-  - cd build-static-gcc
+  - mkdir build-static && mkdir build-shared && mkdir build-coverage
+  - cd build-static
   - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
-  - make
-  - cd ../build-shared-gcc
+  - cmake --build .
+  - cd ../build-shared
   - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
-  - make
-  - cd ../build-bare-gcc
-  - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGB_BASE_BUILD_BARE=ON ..
-  - make
-  - cd ../build-coverage-gcc
-  - cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=${GCOV} ..
-  - make
+  - cmake --build .
+  - |
+    if [[ "${CXX}" == "g++-8" ]]; then
+        cd ../build-coverage
+        cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=${GCOV} ..
+        cmake --build .
+    fi
   - cd ${TRAVIS_BUILD_DIR}
 
 script:
-  - cd build-static-gcc
-  - make test
-  - cd ../build-shared-gcc
-  - make test
-  - cd ../build-bare-gcc
-  - make test
-  - cd ../build-coverage-gcc
-  - make test
+  - cd build-static
+  - ctest -C Release
+  - cd ../build-shared
+  - ctest -C Release
+  - cd ../build-coverage
+  - ctest -C Debug
 
 after_script:
   - cd ${TRAVIS_BUILD_DIR}
-  - cd build-static-gcc
-  - make doxygen-doc
+  - cd build-static
+  - cmake --build . --target doxygen-doc
 
 after_success:
-  - cd ${TRAVIS_BUILD_DIR}/build-coverage-gcc
-  - make gbBase_TestCoverage
-  - bash <(curl -s https://codecov.io/bash)
-
+  - |
+    if [[ "${CXX}" == "g++-8" ]]; then
+        cd ${TRAVIS_BUILD_DIR}/build-coverage
+        cmake --build . --target gbBase_TestCoverage
+        bash <(curl -s https://codecov.io/bash)
+    fi
