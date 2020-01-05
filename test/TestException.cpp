@@ -158,7 +158,30 @@ TEST_CASE("Exception")
         CHECK(*desc == testtext);
     }
 
-    SECTION("Copy construction")
+    SECTION("Copy construction - built-ins only")
+    {
+        std::string const testtext("Lorem ipsum");
+        std::string const testfile("awesome_source.cpp");
+        std::string const testfunc("ultimate_test_function_2k(int, float, long)");
+        auto const e = decorate_exception(Exceptions::NotImplemented(),
+                                          Exception_Info::description(testtext),
+                                          Exception_Info::location(testfile.c_str(), testfunc.c_str(), 42));
+        Exceptions::NotImplemented e2(e);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e));
+        CHECK(*getErrorInfo<Exception_Info::description>(e) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e2));
+        CHECK(*getErrorInfo<Exception_Info::description>(e2) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e));
+        CHECK(getErrorInfo<Exception_Info::location>(e)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e2));
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->line == 42);
+    }
+
+    SECTION("Copy construction - decorated")
     {
         std::string const testtext("Lorem ipsum");
         std::string const testfile("awesome_source.cpp");
@@ -193,7 +216,32 @@ TEST_CASE("Exception")
         CHECK(getErrorInfo<InfoTestInfo>(e2)->s == "fooberella");
     }
 
-    SECTION("Copy assignment")
+    SECTION("Copy assignment - built-ins only")
+    {
+        std::string const testtext("Lorem ipsum");
+        std::string const testfile("awesome_source.cpp");
+        std::string const testfunc("ultimate_test_function_2k(int, float, long)");
+        auto const e = decorate_exception(Exceptions::NotImplemented(),
+                                          Exception_Info::description(testtext),
+                                          Exception_Info::location(testfile.c_str(), testfunc.c_str(), 42));
+        Exceptions::NotImplemented e2;
+        CHECK(getErrorInfo<Exception_Info::description>(e2)->empty());
+        e2 = e;
+        REQUIRE(getErrorInfo<Exception_Info::description>(e));
+        CHECK(*getErrorInfo<Exception_Info::description>(e) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::description>(e2));
+        CHECK(*getErrorInfo<Exception_Info::description>(e2) == testtext);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e));
+        CHECK(getErrorInfo<Exception_Info::location>(e)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e)->line == 42);
+        REQUIRE(getErrorInfo<Exception_Info::location>(e2));
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->file == testfile);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->function == testfunc);
+        CHECK(getErrorInfo<Exception_Info::location>(e2)->line == 42);
+    }
+
+    SECTION("Copy assignment - decorated")
     {
         std::string const testtext("Lorem ipsum");
         std::string const testfile("awesome_source.cpp");

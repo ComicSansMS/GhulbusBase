@@ -247,13 +247,13 @@ namespace GHULBUS_BASE_NAMESPACE
         Exception& operator=(Exception&&) noexcept  = default;
 
         Exception(Exception const& rhs)
-            :m_errorInfos(rhs.m_errorInfos ? rhs.m_errorInfos->clone() : nullptr),
+            :m_errorInfos((rhs.m_errorInfos == nullptr) ? nullptr : rhs.m_errorInfos->clone()),
              m_location(rhs.m_location), m_description(rhs.m_description)
         {}
 
         Exception& operator=(Exception const& rhs) {
             if (&rhs != this) {
-                m_errorInfos = rhs.m_errorInfos->clone();
+                m_errorInfos = ((rhs.m_errorInfos  == nullptr) ? nullptr : rhs.m_errorInfos->clone());
                 m_location = rhs.m_location;
                 m_description = rhs.m_description;
             }
