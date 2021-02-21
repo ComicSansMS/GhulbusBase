@@ -349,7 +349,6 @@ TEST_CASE("Exception")
                 GHULBUS_THROW(the_exception, testtext);
             } catch(std::exception& e) {
                 was_caught = true;
-                e.what();
                 auto const info = getErrorInfo<Exception_Info::description>(e);
                 REQUIRE(info);
                 INFO(e.what());
