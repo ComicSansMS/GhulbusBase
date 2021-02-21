@@ -72,6 +72,7 @@ set(GB_BASE_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/FixedRing.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Log.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/LogHandlers.hpp
+    ${GB_BASE_INCLUDE_DIR}/gbBase/OverloadSet.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/PerfLog.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
     ${GB_BASE_ALLOCATOR_HEADER_FILES}
@@ -86,6 +87,7 @@ set(GB_BASE_TEST_SOURCES
     ${GB_BASE_TEST_DIR}/TestFixedRing.cpp
     ${GB_BASE_TEST_DIR}/TestLog.cpp
     ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
+    ${GB_BASE_TEST_DIR}/TestOverloadSet.cpp
     ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
     ${GB_BASE_TEST_DIR}/TestAllocator.cpp
     ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyMonotonic.cpp
