@@ -412,6 +412,7 @@ namespace GHULBUS_BASE_NAMESPACE
             class GHULBUS_BASE_API ExceptionImpl : public virtual ::GHULBUS_BASE_NAMESPACE::Exception
             {
             public:
+                ~ExceptionImpl() override = default;
                 char const* what() const noexcept override {
                     return ::GHULBUS_BASE_NAMESPACE::getDiagnosticMessage(*this);
                 }
