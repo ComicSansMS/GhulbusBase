@@ -57,17 +57,18 @@ public:
     /** Push an element to the back of the ring buffer.
      * \pre !full()
      */
-    void push_back(T const& v)
+    template<typename TT>
+    void push_back(TT&& v)
     {
         GHULBUS_PRECONDITION(!full());
         if (m_ring.size() < m_ring.capacity()) {
-            m_ring.push_back(v);
+            m_ring.push_back(std::forward<TT>(v));
             ++m_push_idx;
             ++m_n_elements;
             return;
         }
         if (m_push_idx == m_ring.capacity()) { m_push_idx = 0; }
-        m_ring[m_push_idx++] = v;
+        m_ring[m_push_idx++] = std::forward<TT>(v);
         ++m_n_elements;
     }
 
