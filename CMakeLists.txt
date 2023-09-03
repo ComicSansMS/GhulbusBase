@@ -50,11 +50,28 @@ generate_export_header(gbBase
 )
 set(GB_BASE_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp)
 
-target_sources(gbBase
-    PRIVATE
+set(GB_BASE_SOURCE_FILES
     ${GB_BASE_SOURCE_DIR}/Assert.cpp
     ${GB_BASE_SOURCE_DIR}/Log.cpp
     ${GB_BASE_SOURCE_DIR}/LogHandlers.cpp
+)
+
+set(GB_BASE_TEST_SOURCES
+    ${GB_BASE_TEST_DIR}/TestAnyInvocable.cpp
+    ${GB_BASE_TEST_DIR}/TestAssert.cpp
+    ${GB_BASE_TEST_DIR}/TestBase.cpp
+    ${GB_BASE_TEST_DIR}/TestException.cpp
+    ${GB_BASE_TEST_DIR}/TestFinally.cpp
+    ${GB_BASE_TEST_DIR}/TestFixedRing.cpp
+    ${GB_BASE_TEST_DIR}/TestLog.cpp
+    ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
+    ${GB_BASE_TEST_DIR}/TestOverloadSet.cpp
+    ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
+)
+
+target_sources(gbBase
+    PRIVATE
+    ${GB_BASE_SOURCE_FILES}
     PUBLIC
     FILE_SET HEADERS
     BASE_DIRS ${GB_BASE_INCLUDE_DIR}
@@ -131,16 +148,7 @@ if(GB_BUILD_TESTS)
     add_executable(gbBase_Test)
     target_sources(gbBase_Test
         PRIVATE
-        ${GB_BASE_TEST_DIR}/TestAnyInvocable.cpp
-        ${GB_BASE_TEST_DIR}/TestAssert.cpp
-        ${GB_BASE_TEST_DIR}/TestBase.cpp
-        ${GB_BASE_TEST_DIR}/TestException.cpp
-        ${GB_BASE_TEST_DIR}/TestFinally.cpp
-        ${GB_BASE_TEST_DIR}/TestFixedRing.cpp
-        ${GB_BASE_TEST_DIR}/TestLog.cpp
-        ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
-        ${GB_BASE_TEST_DIR}/TestOverloadSet.cpp
-        ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
+        ${GB_BASE_TEST_SOURCES}
     )
     target_link_libraries(gbBase_Test PUBLIC gbBase Catch2)
     target_compile_definitions(gbBase_Test PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
