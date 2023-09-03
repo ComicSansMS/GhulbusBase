@@ -2,10 +2,10 @@
 #define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_EXCEPTION_HPP
 
 /** @file
-*
-* @brief Exception Base Class.
-* @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
-*/
+ *
+ * @brief Exception Base Class.
+ * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
+ */
 #include <gbBase/config.hpp>
 
 #include <exception>

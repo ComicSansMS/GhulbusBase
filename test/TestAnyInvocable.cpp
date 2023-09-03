@@ -102,6 +102,22 @@ TEST_CASE("AnyInvocable")
         }
     }
 
+    SECTION("Movable return values")
+    {
+        int expected = 0;
+        auto func = []() -> CountCopies { CountCopies c; return c; };
+        {
+            CountCopies ret = func();
+            CHECK(ret.count_ == 0);
+        }
+
+        AnyInvocable<CountCopies()> stdfunc(func);
+        {
+            CountCopies ret = func();
+            CHECK(ret.count_ == 0);
+        }
+    }
+
     SECTION("Move Assignment")
     {
         Ghulbus::AnyInvocable<int()> func1([]() { return 42; });

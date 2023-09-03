@@ -2,10 +2,10 @@
 #define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_LOG_HANDLERS_HPP
 
 /** @file
-*
-* @brief Log Handlers.
-* @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
-*/
+ *
+ * @brief Log Handlers.
+ * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
+ */
 
 #include <gbBase/config.hpp>
 #include <gbBase/Log.hpp>

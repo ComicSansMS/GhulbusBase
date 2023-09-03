@@ -2,10 +2,10 @@
 #define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_ANY_INVOCABLE_HPP
 
 /** @file
-*
-* @brief An owning type erased wrapper for callable objects.
-* @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
-*/
+ *
+ * @brief An owning type erased wrapper for callable objects.
+ * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
+ */
 
 #include <gbBase/config.hpp>
 

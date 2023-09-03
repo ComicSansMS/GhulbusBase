@@ -2,10 +2,10 @@
 #define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_OVERLOAD_SET_HPP
 
 /** @file
-*
-* @brief A helper type for wrapping a number of invocables into a single overload set.
-* @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
-*/
+ *
+ * @brief A helper type for wrapping a number of invocables into a single overload set.
+ * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
+ */
 
 #include <gbBase/config.hpp>
 

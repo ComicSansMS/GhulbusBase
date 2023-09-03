@@ -1,17 +1,16 @@
-cmake_minimum_required(VERSION 3.9)
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
-    cmake_policy(SET CMP0074 NEW)
-endif()
+cmake_minimum_required(VERSION 3.24)
 
 project(GhulbusBase)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if($ENV{TRAVIS})
-    if($ENV{TRAVIS} STREQUAL "true")
-        message(STATUS "Building on Travis-CI.")
-        set(IS_TRAVIS_BUILD TRUE)
+option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
+
+if(MSVC)
+    option(GB_PARALLEL_BUILD "If set, uses multiple build processes in parallel." ON)
+    if(GB_PARALLEL_BUILD)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     endif()
 endif()
 
@@ -26,14 +25,12 @@ if(GB_GENERATE_COVERAGE_INFO)
     endif()
 endif()
 
-add_subdirectory(external)
-
 ###############################################################################
 ## Library gbBase
 ###############################################################################
 
 set(GB_BASE_VERSION_MAJOR 0)
-set(GB_BASE_VERSION_MINOR 1)
+set(GB_BASE_VERSION_MINOR 9)
 set(GB_BASE_VERSION_PATCH 0)
 set(GB_BASE_VERSION "${GB_BASE_VERSION_MAJOR}.${GB_BASE_VERSION_MINOR}.${GB_BASE_VERSION_PATCH}")
 
@@ -44,26 +41,24 @@ set(GB_BASE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(GB_BASE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(GB_BASE_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
-set(GB_BASE_SOURCE_FILES
+add_library(gbBase)
+
+include(GenerateExportHeader)
+generate_export_header(gbBase
+    EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp
+    PREFIX_NAME GHULBUS_LIBRARY_
+)
+set(GB_BASE_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp)
+
+target_sources(gbBase
+    PRIVATE
     ${GB_BASE_SOURCE_DIR}/Assert.cpp
     ${GB_BASE_SOURCE_DIR}/Log.cpp
     ${GB_BASE_SOURCE_DIR}/LogHandlers.cpp
-)
-
-set(GB_BASE_ALLOCATOR_HEADER_FILES
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyMonotonic.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyPool.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyRing.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/AllocationStrategyStack.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/DebugPolicy.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/StatefulAllocator.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/Storage.hpp
-    ${GB_BASE_INCLUDE_DIR}/gbBase/Allocator/StorageView.hpp
-)
-source_group(TREE ${GB_BASE_INCLUDE_DIR}/gbBase FILES ${GB_BASE_ALLOCATOR_HEADER_FILES})
-
-set(GB_BASE_HEADER_FILES
+    PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${GB_BASE_INCLUDE_DIR}
+    FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/config.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/AnyInvocable.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/Assert.hpp
@@ -75,43 +70,16 @@ set(GB_BASE_HEADER_FILES
     ${GB_BASE_INCLUDE_DIR}/gbBase/OverloadSet.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/PerfLog.hpp
     ${GB_BASE_INCLUDE_DIR}/gbBase/UnusedVariable.hpp
-    ${GB_BASE_ALLOCATOR_HEADER_FILES}
+    PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${PROJECT_BINARY_DIR}/generated
+    FILES
+    ${GB_BASE_GENERATED_HEADER_FILES}
 )
-
-set(GB_BASE_TEST_SOURCES
-    ${GB_BASE_TEST_DIR}/TestAnyInvocable.cpp
-    ${GB_BASE_TEST_DIR}/TestAssert.cpp
-    ${GB_BASE_TEST_DIR}/TestBase.cpp
-    ${GB_BASE_TEST_DIR}/TestException.cpp
-    ${GB_BASE_TEST_DIR}/TestFinally.cpp
-    ${GB_BASE_TEST_DIR}/TestFixedRing.cpp
-    ${GB_BASE_TEST_DIR}/TestLog.cpp
-    ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
-    ${GB_BASE_TEST_DIR}/TestOverloadSet.cpp
-    ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocator.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyMonotonic.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyPool.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyRing.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorAllocationStrategyStack.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorDebugPolicy.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorStatefulAllocator.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorStorage.cpp
-    ${GB_BASE_TEST_DIR}/TestAllocatorStorageView.cpp
-    ${GB_BASE_TEST_DIR}/MockDebugPolicy.hpp
-    ${GB_BASE_TEST_DIR}/MockStorage.hpp
-)
-
-add_library(gbBase ${GB_BASE_SOURCE_FILES} ${GB_BASE_HEADER_FILES})
-target_compile_features(gbBase PRIVATE cxx_lambdas cxx_override cxx_range_for)
-target_compile_features(gbBase PUBLIC cxx_attributes cxx_func_identifier cxx_noexcept)
 target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}>)
-# TODO: using the imported target will break the INSTALL for static builds
-#target_link_libraries(gbBase PRIVATE hinnant_date)
-target_include_directories(gbBase PRIVATE ${PROJECT_SOURCE_DIR}/external/hinnant_date)
+target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
 target_link_libraries(gbBase PUBLIC Threads::Threads)
 target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
-target_compile_definitions(gbBase PUBLIC $<$<CXX_COMPILER_ID:MSVC>:_ENABLE_EXTENDED_ALIGNED_STORAGE>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
 target_compile_options(gbBase PRIVATE
@@ -119,15 +87,6 @@ target_compile_options(gbBase PRIVATE
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
 target_sources(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/debug_visualizers/gbBase.natvis>)
 set_property(SOURCE ${PROJECT_SOURCE_DIR}/debug_visualizers/gbBase.natvis PROPERTY VS_TOOL_OVERRIDE Natvis)
-
-option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
-include(GenerateExportHeader)
-generate_export_header(gbBase
-    EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp
-    PREFIX_NAME GHULBUS_LIBRARY_
-)
-set(GB_BASE_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbBase/gbBase_Export.hpp)
-target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
 if(BUILD_SHARED_LIBS)
     set_property(TARGET gbBase PROPERTY CXX_VISIBILITY_PRESET hidden)
     set_property(TARGET gbBase PROPERTY VISIBILITY_INLINES_HIDDEN ON)
@@ -145,40 +104,49 @@ option(GB_BUILD_TESTS "Determines whether to build tests." ON)
 if(GB_BUILD_TESTS)
     enable_testing()
 
-    if(NOT TARGET Catch)
-        include(ExternalProject)
-        if(IS_TRAVIS_BUILD)     # on travis, use git for fetching instead of wget
-            set(GB_FETCH_EXTERNAL_CATCH
-                GIT_REPOSITORY https://github.com/philsquared/Catch.git
-                GIT_TAG 19ab2117c5bac2f376f8da4a4b25e183137bcec0)
-        elseif(WIN32)
-            set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/catchorg/Catch2/archive/v2.0.1.zip
-                URL_HASH MD5=1abca1b324b99b1631e999119b172620)
-        else()
-            set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/catchorg/Catch2/archive/v2.0.1.tar.gz
-                URL_HASH MD5=2080f4696579351d9323b3b5a8c3c71b)
-        endif()
-        ExternalProject_Add(Catch-External
-            PREFIX ${CMAKE_BINARY_DIR}/external/Catch
-            ${GB_FETCH_EXTERNAL_CATCH}
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND ""
-            INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch.hpp
-                                                     ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
-        )
-        add_library(Catch INTERFACE)
-        add_dependencies(Catch Catch-External)
-        target_include_directories(Catch INTERFACE ${CMAKE_BINARY_DIR}/external/Catch/include)
-        target_compile_definitions(Catch INTERFACE $<$<CXX_COMPILER_ID:MSVC>:_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING>)
+    if(NOT EXISTS ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.hpp)
+        file(DOWNLOAD
+             https://github.com/catchorg/Catch2/releases/download/v3.4.0/catch_amalgamated.hpp
+             ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.hpp
+             EXPECTED_HASH SHA1=be29d8580ffa74428f47e2480c327b4c1e25a183
+             )
+        file(DOWNLOAD
+             https://github.com/catchorg/Catch2/releases/download/v3.4.0/catch_amalgamated.cpp
+             ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.cpp
+             EXPECTED_HASH SHA1=af0af6a63cee729a5672602b0c779c1d6426a546
+             )
+        file(WRITE ${PROJECT_BINARY_DIR}/external/catch2/catch.hpp "#include <catch_amalgamated.hpp>\n")
     endif()
 
-    add_executable(gbBase_Test ${GB_BASE_TEST_SOURCES})
-    target_link_libraries(gbBase_Test PUBLIC gbBase Catch)
+    add_library(Catch2 STATIC)
+    target_sources(Catch2
+        PRIVATE
+        ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.cpp
+        PUBLIC
+        FILE_SET HEADERS
+        FILES
+        ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.hpp
+        ${PROJECT_BINARY_DIR}/external/catch2/catch.hpp
+    )
+    target_include_directories(Catch2 INTERFACE ${PROJECT_BINARY_DIR}/external/catch2)
+
+    add_executable(gbBase_Test)
+    target_sources(gbBase_Test
+        PRIVATE
+        ${GB_BASE_TEST_DIR}/TestAnyInvocable.cpp
+        ${GB_BASE_TEST_DIR}/TestAssert.cpp
+        ${GB_BASE_TEST_DIR}/TestBase.cpp
+        ${GB_BASE_TEST_DIR}/TestException.cpp
+        ${GB_BASE_TEST_DIR}/TestFinally.cpp
+        ${GB_BASE_TEST_DIR}/TestFixedRing.cpp
+        ${GB_BASE_TEST_DIR}/TestLog.cpp
+        ${GB_BASE_TEST_DIR}/TestLogHandlers.cpp
+        ${GB_BASE_TEST_DIR}/TestOverloadSet.cpp
+        ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
+    )
+    target_link_libraries(gbBase_Test PUBLIC gbBase Catch2)
     target_include_directories(gbBase_Test PUBLIC ${GB_BASE_TEST_DIR})
     target_compile_definitions(gbBase_Test PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
-    target_compile_definitions(gbBase_Test PUBLIC $<$<CXX_COMPILER_ID:MSVC>:_ENABLE_EXTENDED_ALIGNED_STORAGE>)
     add_test(NAME TestBase COMMAND gbBase_Test)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
@@ -227,9 +195,9 @@ install(TARGETS gbBase EXPORT gbBaseTargets
     LIBRARY DESTINATION lib/$<CONFIG>
     ARCHIVE DESTINATION lib/$<CONFIG>
     INCLUDES DESTINATION include
+    FILE_SET HEADERS
 )
 target_include_directories(gbBase PUBLIC $<INSTALL_INTERFACE:include>)
-install(FILES ${GB_BASE_HEADER_FILES} ${GB_BASE_GENERATED_HEADER_FILES} DESTINATION include/gbBase)
 if(MSVC AND BUILD_SHARED_LIBS)
     install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/Debug CONFIGURATIONS Debug)
     install(FILES $<TARGET_PDB_FILE:gbBase> DESTINATION bin/RelWithDebInfo CONFIGURATIONS RelWithDebInfo)

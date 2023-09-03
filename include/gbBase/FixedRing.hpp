@@ -2,10 +2,10 @@
 #define GHULBUS_LIBRARY_INCLUDE_GUARD_BASE_FIXED_RING_HPP
 
 /** @file
-*
-* @brief Fixed-size ring buffer.
-* @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
-*/
+ *
+ * @brief Fixed-size ring buffer.
+ * @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
+ */
 
 #include <gbBase/config.hpp>
 #include <gbBase/Assert.hpp>

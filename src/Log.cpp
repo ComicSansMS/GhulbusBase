@@ -2,15 +2,6 @@
 #include <gbBase/Assert.hpp>
 #include <gbBase/LogHandlers.hpp>
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4146 4244)
-#endif
-#include <hinnant_date/date.h>
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
 #include <atomic>
 #include <chrono>
 #include <cstring>
@@ -35,8 +26,8 @@ struct StaticState {
  * This is mainly used for doing the bookkeeping for initializeLogging() and shutdownLogging().
  */
 struct StaticData {
-    int staticStorageRefcount;
-    std::aligned_storage<sizeof(StaticState), alignof(StaticState)>::type staticStateStorage;
+    int64_t staticStorageRefcount;
+    alignas(StaticState) std::byte staticStateStorage[sizeof(StaticState)];
     StaticState* logState;
 } g_staticData;
 
@@ -50,10 +41,10 @@ inline std::ostream& operator<<(std::ostream& os, current_time_t const&)
     using date::floor;
 #endif
     std::chrono::system_clock::time_point const now = std::chrono::system_clock::now();
-    date::sys_days const today = floor<date::days>(now);
+    auto const today = std::chrono::floor<std::chrono::days>(now);
     // the duration cast here determines the precision of the resulting time_of_day in the output
     auto const time_since_midnight = std::chrono::duration_cast<std::chrono::milliseconds>(now - today);
-    return os << date::year_month_day(today) << ' ' << date::make_time(time_since_midnight);
+    return os << std::chrono::year_month_day(today) << ' ' << std::chrono::hh_mm_ss(time_since_midnight);
 }
 }
 
