@@ -11,18 +11,20 @@ jobs:
         - {
             name: "Ubuntu Latest gcc",
             os: ubuntu-latest,
-            cc: "gcc-12",
-            cxx: "g++-12",
+            cc: gcc-12,
+            cxx: g++-12,
           }
         - {
             name: "Ubuntu Latest clang",
             os: ubuntu-latest,
-            cc: "clang-15",
-            cxx: "clang++-15",
+            cc: clang-14,
+            cxx: clang++-14,
+            cxxflags: -stdlib=libc++,
           }
     env:
       CC: ${{ matrix.config.cc }}
       CXX: ${{ matrix.config.cxx }}
+      CXXFLAGS: ${{ matrix.config.cxxflags }}
     steps:
       - uses: actions/checkout@v3
       - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }}."
