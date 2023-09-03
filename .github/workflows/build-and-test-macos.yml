@@ -1,0 +1,40 @@
+name: Build and Test macOS
+on: [push]
+jobs:
+  build:
+    name: ${{ matrix.config.name }} (${{matrix.build_type}})
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+        config:
+        - {
+            name: "macOS Latest clang",
+            os: macos-latest,
+            cc: "clang",
+            cxx: "clang++",
+          }
+    env:
+      CC: ${{ matrix.config.cc }}
+      CXX: ${{ matrix.config.cxx }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }} (${{matrix.build_type}})."
+      - name: 📦 Install dependencies
+        run: brew install ninja doxygen graphviz
+      - name: 🔨 Compiler info
+        run: |
+            which cmake
+            cmake --version
+            which ${CXX}
+            ${CXX} --version
+      - name: 👷‍♂️ Build
+        run: |
+            cd build
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} ..
+            cmake --build .
+      - name: 🔍 Test
+        run: |
+            cd build
+            ctest -C ${{matrix.build_type}}
