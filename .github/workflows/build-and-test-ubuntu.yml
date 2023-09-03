@@ -38,7 +38,7 @@ jobs:
       - name: 👷‍♂️ Build
         run: |
             cd build
-            cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=/usr/bin/gcov-12 ..
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=/usr/bin/gcov-12 ..
             cmake --build .
       - name: 🔍 Test
         run: |
