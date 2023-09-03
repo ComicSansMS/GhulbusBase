@@ -76,8 +76,6 @@ target_sources(gbBase
     FILES
     ${GB_BASE_GENERATED_HEADER_FILES}
 )
-target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${GB_BASE_INCLUDE_DIR}>)
-target_include_directories(gbBase PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
 target_link_libraries(gbBase PUBLIC Threads::Threads)
 target_compile_definitions(gbBase PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 target_compile_options(gbBase PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
@@ -124,11 +122,11 @@ if(GB_BUILD_TESTS)
         ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.cpp
         PUBLIC
         FILE_SET HEADERS
+        BASE_DIRS ${PROJECT_BINARY_DIR}/external/catch2
         FILES
         ${PROJECT_BINARY_DIR}/external/catch2/catch_amalgamated.hpp
         ${PROJECT_BINARY_DIR}/external/catch2/catch.hpp
     )
-    target_include_directories(Catch2 INTERFACE ${PROJECT_BINARY_DIR}/external/catch2)
 
     add_executable(gbBase_Test)
     target_sources(gbBase_Test
@@ -145,7 +143,6 @@ if(GB_BUILD_TESTS)
         ${GB_BASE_TEST_DIR}/TestPerfLog.cpp
     )
     target_link_libraries(gbBase_Test PUBLIC gbBase Catch2)
-    target_include_directories(gbBase_Test PUBLIC ${GB_BASE_TEST_DIR})
     target_compile_definitions(gbBase_Test PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
     add_test(NAME TestBase COMMAND gbBase_Test)
 
