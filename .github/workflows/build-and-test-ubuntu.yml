@@ -2,11 +2,12 @@ name: Build and Test Ubuntu
 on: [push]
 jobs:
   build:
-    name: ${{ matrix.config.name }}
+    name: ${{ matrix.config.name }} (${{matrix.build_type}})
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
+        build_type: [Debug, Release]
         config:
         - {
             name: "Ubuntu Latest gcc",
@@ -27,10 +28,9 @@ jobs:
       CXXFLAGS: ${{ matrix.config.cxxflags }}
     steps:
       - uses: actions/checkout@v3
-      - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }}."
+      - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }} (${{matrix.build_type}})."
       - name: 📦 Install dependencies
-        run: |
-            sudo apt-get install -y ninja-build
+        run: sudo apt-get install -y ninja-build doxygen graphviz mscgen
       - name: 🔨 Compiler info
         run: |
             which cmake
@@ -40,15 +40,21 @@ jobs:
       - name: 👷‍♂️ Build
         run: |
             cd build
-            cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=/usr/bin/gcov-12 ..
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DGB_GENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=/usr/bin/gcov-12 ..
             cmake --build .
       - name: 🔍 Test
         run: |
             cd build
-            ctest -C Debug
+            ctest -C ${{matrix.build_type}}
       - name: 👮‍♂️ Code Coverage
-        if: matrix.config.cc == 'gcc-12'
+        if: matrix.config.cc == 'gcc-12' && matrix.build_type == 'Debug'
         run: |
             cd build
             cmake --build . --target gbBase_TestCoverage
             bash <(curl -s https://codecov.io/bash) -x /usr/bin/gcov-12 2> /dev/null
+      - name: 📖 Documentation
+        if: matrix.build_type == 'Release'
+        run: |
+            cd build
+            cmake --build . --target doxygen-doc
+

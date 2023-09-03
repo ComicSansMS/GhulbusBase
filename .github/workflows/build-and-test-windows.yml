@@ -2,11 +2,12 @@ name: Build and Test MSVC
 on: [push]
 jobs:
   build:
-    name: ${{ matrix.config.name }}
+    name: ${{ matrix.config.name }} (${{matrix.build_type}})
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
+        build_type: [Debug, Release]
         config:
         - {
             name: "Windows Latest MSVC",
@@ -18,15 +19,16 @@ jobs:
     env:
       CC: ${{ matrix.config.cc }}
       CXX: ${{ matrix.config.cxx }}
+      VCPKG_DEFAULT_TRIPLET: x64-windows
     steps:
       - uses: actions/checkout@v3
-      - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }}."
+      - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }} (${{matrix.build_type}})."
       - name: 👷‍♂️ Build
         run: |
             cd build
             cmake -G "Visual Studio 17 2022" -A x64 ..
-            cmake --build . --config Debug -j
+            cmake --build . --config ${{matrix.build_type}} -j
       - name: 🔍 Test
         run: |
             cd build
-            ctest -C Debug
+            ctest -C ${{matrix.build_type}}
