@@ -37,9 +37,6 @@ static_assert(std::is_trivial<StaticData>::value,
 struct current_time_t {} current_time;
 inline std::ostream& operator<<(std::ostream& os, current_time_t const&)
 {
-#if _MSC_FULL_VER < 190023918
-    using date::floor;
-#endif
     std::chrono::system_clock::time_point const now = std::chrono::system_clock::now();
     auto const today = std::chrono::floor<std::chrono::days>(now);
     // the duration cast here determines the precision of the resulting time_of_day in the output
