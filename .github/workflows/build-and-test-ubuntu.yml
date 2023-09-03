@@ -1,0 +1,52 @@
+name: Build and Test Ubuntu
+on: [push]
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Ubuntu Latest gcc",
+            os: ubuntu-latest,
+            cc: "gcc-12",
+            cxx: "g++-12",
+          }
+        - {
+            name: "Ubuntu Latest clang",
+            os: ubuntu-latest,
+            cc: "clang-15",
+            cxx: "clang++-15",
+          }
+    env:
+      CC: ${{ matrix.config.cc }}
+      CXX: ${{ matrix.config.cxx }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }}."
+      - name: 📦 Install dependencies
+        run: |
+            sudo apt-get install -y ninja-build
+      - name: 🔨 Compiler info
+        run: |
+            which cmake
+            cmake --version
+            which ${CXX}
+            ${CXX} --version
+      - name: 👷‍♂️ Build
+        run: |
+            cd build
+            cmake -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGENERATE_COVERAGE_INFO=ON -DGCOV_COMMAND=/usr/bin/gcov-12 ..
+            cmake --build .
+      - name: 🔍 Test
+        run: |
+            cd build
+            ctest -C Debug
+      - name: 👮‍♂️ Code Coverage
+        if: matrix.config.cc == 'gcc-12'
+        run: |
+            cd build
+            cmake --build . --target coverage
+            bash <(curl -s https://codecov.io/bash) -x /usr/bin/gcov-12 2> /dev/null
