@@ -12,15 +12,16 @@ jobs:
         - {
             name: "Ubuntu Latest gcc",
             os: ubuntu-latest,
-            cc: gcc-12,
-            cxx: g++-12,
+            cc: gcc-14,
+            cxx: g++-14,
           }
         - {
             name: "Ubuntu Latest clang",
             os: ubuntu-latest,
-            cc: clang-14,
-            cxx: clang++-14,
+            cc: clang-18,
+            cxx: clang++-18,
             cxxflags: -stdlib=libc++,
+            packages: libc++-dev libc++abi-dev,
           }
     env:
       CC: ${{ matrix.config.cc }}
@@ -30,7 +31,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: echo "🏃‍♂️ Running job ${{ matrix.config.name }} (${{matrix.build_type}})."
       - name: 📦 Install dependencies
-        run: sudo apt-get install -y ninja-build doxygen graphviz mscgen
+        run: sudo apt-get install -y ninja-build doxygen graphviz mscgen ${{matrix.config.packages}}
       - name: 🔨 Compiler info
         run: |
             which cmake
